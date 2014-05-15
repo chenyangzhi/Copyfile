@@ -4,4 +4,5 @@
 int  main(int args,char* argv[])
 {
      printf("hello world\n");
+     printf("delet git\n");
 }

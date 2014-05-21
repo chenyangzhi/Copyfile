@@ -1,0 +1,11 @@
+CC = g++
+
+mycp:main.o SimpleCopyFile.o ArguMethod.o
+	$(CC) -g -o mycp SimpleCopyFile.o ArguMethod.o main.o -std=c99
+main.o:main.c
+	$(CC) -g -c main.c  -std=c99
+SimpleCopyFile.o:SimpleCopyFile.c
+	$(CC) -g -c SimpleCopyFile.c -std=c99
+ArguMethod.o:ArguMethod.c
+	$(CC) -g -c ArguMethod.c   -std=c99
+

@@ -4,26 +4,26 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#include "CopyFile.h"
 #define BUFFSIZE  131072
-
-int simpleCopyFile(char* inputFilePath,char* outputFilePath)
+extern globalArgs ga;
+int simple_copyfile(char* input_file_path,char* output_file_path)
 {
 	int n;
-	int fileHandSrc,fileHandDst;
+	int filehand_src,filehand_dst;
 	char buf[BUFFSIZE];
-	if(ga.preserve == true)
+	if(ga.need_preserve == true)
 	{
 		
 	}
-	fileHandSrc = open(inputFilePath,O_RDONLY);
-	if((fileHandDst = open(outputFilePath,O_WRONLY|O_CREAT, 0775)) < 0)
+	filehand_src = open(input_file_path,O_RDONLY);
+	if((filehand_dst = open(output_file_path,O_WRONLY|O_CREAT, 0775)) < 0)
 	{
 		perror("open dest file error");
 		exit(EXIT_FAILURE);
 	}
-        while((n = read(fileHandSrc,buf,BUFFSIZE)) > 0)
-		if (write(fileHandDst,buf,n) != n)
+        while((n = read(filehand_src,buf,BUFFSIZE)) > 0)
+		if (write(filehand_dst,buf,n) != n)
 			perror("write error");
   	if(n < 0)
 	{

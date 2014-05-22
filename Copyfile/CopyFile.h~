@@ -9,16 +9,11 @@ typedef enum file{
   ENUM_BLOCKDEVICE
 }file;
 
-enum{
-  ALL = 1,
-  MODE,
-  OWNERSHIP,
-  TIME_STAMPS,
-  LINK,
-  XATTR,
-};
-
-file typeOfFile(char* inputFilePath);
-int simpleCopyFile(char* inputFilePath,char* outputFilePath);
-void recursiveMethod(char* input,char* output);
+file type_of_file(char* inputFilePath);
+int simple_copy_file(char* inputFilePath,char* outputFilePath);
+void recursive_method(char* input,char* output);
+void argmatch_valid (char const *const *arglist);
+int argmatch (const char *arg, const char *const *arglist);
+void argmatch_invalid (const char *context, const char *value);
+int argument_match_report (const char *context, const char *arg, const char *const *arglist);
 #endif

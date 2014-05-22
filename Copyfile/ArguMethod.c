@@ -8,12 +8,58 @@
 #include <time.h>
 #include "CopyFile.h"
 
-file typeOfFile(char* inputFilePath)
+void argmatch_valid (char const *const *arglist) 
+{	
+	int i;
+  	/*当错误输入发生时，正确输入应该被告知 */
+ 	fputs ("Valid arguments are:", stderr);
+  	for (i = 0; arglist[i]; i++)
+	    	fprintf(stderr,"%s",arglist[i]);
+ 	putc ('\n', stderr);
+}
+int argmatch (const char *arg, const char *const *arglist)//比较选项是否准确匹配
+{
+	int i;                     /* arglist 的下标  */
+        int arglen;                /* arglist的长度*/
+        int no_match_flag = -1;           /* 没有准确匹配的标志 */
+
+        arglen = strlen (arg);
+
+        /* 参数与所有的参数相匹配  */
+  	for (i = 0; arglist[i]; i++)
+   	{
+      		if (strncmp (arglist[i], arg, arglen) == 0)
+        	{
+            		no_match_flag = true;
+			return i;	
+        	}
+    	}	
+	return no_match_flag;
+}
+void argmatch_invalid (const char *context, const char *arg)
+{
+	fprintf(stderr,"for %s: can't resolve #%s#",context,arg);
+	return;
+}
+int argument_match_report (const char *context, const char *arg, const char *const *arglist)
+{
+	int res = argmatch (arg, arglist);
+  	if (res >= 0)
+    	/* 成功匹配 */
+    		return res;
+
+  	/* 没有成功匹配，报告错误原因，及改正的方法 */
+  	argmatch_invalid (context, arg);
+  	argmatch_valid (arglist);
+ 	return -1;
+}
+
+file type_of_file(char* input_file_path)
 {
 	struct stat info;
-	if (stat(inputFilePath, &info) == -1) {
+	if (stat(input_file_path, &info) == -1) {
              	perror("stat");
-		fprintf(stderr,"stat file %s\n",inputFilePath);
+		fprintf(stderr,"stat file %s\n",input_file_path);
                	exit(EXIT_FAILURE);
         }
 	switch (info.st_mode & S_IFMT) {
@@ -31,42 +77,42 @@ file typeOfFile(char* inputFilePath)
 		return ENUM_DIR;
 	}
 }
-void recursiveMethod(char* inputDirectory,char* outputDirectory)
+void recursive_method(char* input_directory,char* output_directory)
 {
-	struct dirent* direntNext = NULL;
-	DIR* toReadDir = NULL;
-	char curInputFilePath[512];
-	char curOutputFilePath[512];       
-	memset(curInputFilePath,0,sizeof(curInputFilePath));
-	memset(curOutputFilePath,0,sizeof(curOutputFilePath));	
-	toReadDir = opendir(inputDirectory);
-	if (!toReadDir)
+	struct dirent* dirent_next = NULL;
+	DIR* to_readDir = NULL;
+	char cur_inputfile_path[512];
+	char cur_outputfile_path[512];       
+	memset(cur_inputfile_path,0,sizeof(cur_inputfile_path));
+	memset(cur_outputfile_path,0,sizeof(cur_outputfile_path));	
+	to_readDir = opendir(input_directory);
+	if (!to_readDir)
 	{
    		fprintf(stderr,"open directory error\n");
    		exit(EXIT_FAILURE);
 	}
-	while(0 !=  (direntNext = readdir(toReadDir)))
+	while(0 !=  (dirent_next = readdir(to_readDir)))
 	{
-		sprintf(curInputFilePath,"%s",inputDirectory);
-		sprintf(curOutputFilePath,"%s",outputDirectory);
-		if(strcmp(".",direntNext->d_name )== 0|| strcmp("..",direntNext->d_name) == 0)
+		sprintf(cur_inputfile_path,"%s",input_directory);
+		sprintf(cur_outputfile_path,"%s",output_directory);
+		if(strcmp(".",dirent_next->d_name )== 0|| strcmp("..",dirent_next->d_name) == 0)
 		{
 			continue;
 		}
-		strcat(curInputFilePath,direntNext->d_name);
-		strcat(curOutputFilePath,direntNext->d_name);
+		strcat(cur_inputfile_path,dirent_next->d_name);
+		strcat(cur_outputfile_path,dirent_next->d_name);
 		
-       		if(typeOfFile(curInputFilePath) == ENUM_DIR)
+       		if(type_of_file(cur_inputfile_path) == ENUM_DIR)
 		{
-			mkdir(curOutputFilePath,0775);
-			strcat(curInputFilePath,"/");
-			strcat(curOutputFilePath,"/");
-			recursiveMethod(curInputFilePath,curOutputFilePath);	
+			mkdir(cur_outputfile_path,0775);
+			strcat(cur_inputfile_path,"/");
+			strcat(cur_outputfile_path,"/");
+			recursive_method(cur_inputfile_path,cur_outputfile_path);	
 		}else{
-			simpleCopyFile(curInputFilePath,curOutputFilePath);		
+			simple_copyfile(cur_inputfile_path,cur_outputfile_path);		
 		}
 	}
-        closedir(toReadDir);
+        closedir(to_readDir);
 	return;
 }
 

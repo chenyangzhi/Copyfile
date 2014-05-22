@@ -7,7 +7,7 @@ main()
     DIR * dir;
     struct dirent * ptr;
     int i;
-    dir = opendir("/home/coco");
+    dir = opendir("/etc/rc.d");
     while((ptr = readdir(dir)) != NULL)
     {
         printf("d_name : %s\n", ptr->d_name);

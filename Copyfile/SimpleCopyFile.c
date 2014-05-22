@@ -12,13 +12,24 @@ int simpleCopyFile(char* inputFilePath,char* outputFilePath)
 	int n;
 	int fileHandSrc,fileHandDst;
 	char buf[BUFFSIZE];
+	if(ga.preserve == true)
+	{
+		
+	}
 	fileHandSrc = open(inputFilePath,O_RDONLY);
-	fileHandDst = open(outputFilePath,O_WRONLY|O_CREAT|O_EXCL, 0775);
+	if((fileHandDst = open(outputFilePath,O_WRONLY|O_CREAT, 0775)) < 0)
+	{
+		perror("open dest file error");
+		exit(EXIT_FAILURE);
+	}
         while((n = read(fileHandSrc,buf,BUFFSIZE)) > 0)
 		if (write(fileHandDst,buf,n) != n)
 			perror("write error");
   	if(n < 0)
+	{
 		perror("read error");
-        exit(0);
+		exit(EXIT_FAILURE);
+	}		
+        return 1;
 }
 

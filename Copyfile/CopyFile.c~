@@ -13,7 +13,7 @@ void error_message(const char* error_message)  //错误消息输出函数
 int open_file(const char *pathname, int flags, mode_t mode)   //包装了open函数，创建失败能报错
 {
 	int filehand_dst;
-	if((filehand_dst = open(pathnam,flags, mode)) < 0)
+	if((filehand_dst = open(pathname,flags, mode)) < 0)
 	{
 		error_message("open dest file error");
 	}

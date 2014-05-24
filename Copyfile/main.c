@@ -36,6 +36,8 @@ enum File_attribute
    PRESERVE_ALL
 };
 globalArgs ga;
+file ot = -1;
+static const char* optString = "abdfHilLprstuvxPRS:TV:";
 
 static char const* const preserve_args[] =
 {
@@ -92,11 +94,8 @@ static void decode_preserve_arg (char const *optarg)
     }while (s);
   free (optarg_writable);
 }
+//输出正确的用法.
 
-static const char* optString = "abdfHilLprstuvxPRS:TV:";
-
-/* xianshi yongfa bingqie tuichu.
- */
 void display_usage( void )
 {
 	puts( "the useage is: cp [OPTION]... [-T] SOURCE DEST\
@@ -105,25 +104,62 @@ void display_usage( void )
 	exit( EXIT_FAILURE );
 }
 
+void out_file_parse(char* pathname,char* real_name)
+{
+	if(0 == access(pathname,F_OK))
+	{
+		ot = type_of_file(pathname);
+		if(ENUM_DIR != ot)                        //判断输出文件的类型
+		{
+			if(ga.num_of_files > 2)
+			{
+				display_usage();
+				error_message("too many files for output file,the output must be a directory");
+			}
+			ga.output_file = real_name;
+		}else{
+	
+			if(realpath(pathname,real_name) == 0)
+			{
+		
+				perror("realpath error");
+				exit(EXIT_FAILURE);
+			}else{		
+				ga.output_file = real_name;
+				strcat(ga.output_file,"/");             //如果输出的文件是目录，则在目录路径名后面加上“/”
+			}
+		
+		}
+	}else{
+		ga.output_file = pathname;
+	}
+}
+
 void argu_action_excute()
 {
 	int i;
-	
-	if(1 == ga.need_recursive && (type_of_file(ga.input_file) == ENUM_DIR))
-	{		
-		strcat(ga.output_file,basename(ga.input_file));
-		mkdir(ga.output_file,0775);
-		strcat(ga.output_file,"/");
-		strcat(ga.input_file,"/");
-		recursive_method(ga.input_file,ga.output_file);
-	}else if(1 == ga.need_symbolic_link){
-		if(-1 == symlink(ga.input_file,ga.output_file))
-		{
-			perror("symlink error");
-		}				
-	}else{
-		simple_copyfile(ga.input_file,ga.output_file);
+	switch(ot)
+	{
+		case ENUM_DIR:
+			strcat(ga.output_file,basename(ga.input_file));
+			if((type_of_file(ga.input_file) == ENUM_DIR))
+			{
+				if(1 == ga.need_recursive)		
+				{	
+					mkdir(ga.output_file,0775);
+					strcat(ga.output_file,"/");
+					strcat(ga.input_file,"/");
+					recursive_method(ga.input_file,ga.output_file);
+				}else
+					error_message("omitting the directory");
+			}else{
+				simple_copyfile(ga.input_file, ga.output_file);
+			}
+			break;
+		default:
+			simple_copyfile(ga.input_file, ga.output_file);
 	}
+	
 }
 
 int main( int argc, char *argv[] )
@@ -193,25 +229,15 @@ int main( int argc, char *argv[] )
 		
 		opt = getopt_long(argc, argv,optString,long_options,NULL);
 	}
-	ga.num_of_files = argc - optind;
-	sprintf(outputnewfile_name,"%s",basename(argv[argc-1]));
-	sprintf(outputfile_dir,"%s",dirname(argv[argc-1]));
 	
-	if(realpath(outputfile_dir,real_outputfile_path) == 0)
-	{
-		
-		perror("realpath error");
-		exit(EXIT_FAILURE);
-	}else{
-		strcat(real_outputfile_path,"/");
-		strcat(real_outputfile_path,outputnewfile_name);
-		ga.output_file =  real_outputfile_path;
-	}
-
-        for(i = optind; i < argc-1 ; i++)
+	ga.num_of_files = argc - optind;
+	sprintf(real_outputfile_path,"%s",argv[argc-1]);
+	out_file_parse(argv[argc-1],real_outputfile_path);
+	
+	for(i = optind; i < argc-1 ; i++)
 	{
 		ga.input_file = realpath(argv[optind],real_inputfile_path);
-  		argu_action_excute(ga.input_file);
+	  	argu_action_excute(ga.input_file);
 	}
         
 	

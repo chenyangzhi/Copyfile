@@ -36,6 +36,7 @@ enum File_attribute
    PRESERVE_ALL
 };
 globalArgs ga;
+extern hashmap* hmap;
 
 static char const* const preserve_args[] =
 {
@@ -75,6 +76,7 @@ static void decode_preserve_arg (char const *optarg)
 
 	 case PRESERVE_LINK:
 	  	ga.preserve_links = true;
+		
 	  	break;
 
 	 case PRESERVE_ALL:
@@ -115,14 +117,14 @@ void argu_action_excute()
 		mkdir(ga.output_file,0775);
 		strcat(ga.output_file,"/");
 		strcat(ga.input_file,"/");
-		recursiveMethod(ga.input_file,ga.output_file);
+		recursive_method(ga.input_file,ga.output_file);
 	}else if(1 == ga.need_symbolic_link){
 		if(-1 == symlink(ga.input_file,ga.output_file))
 		{
 			perror("symlink error");
 		}				
 	}else{
-		simpleCopyFile(ga.input_file,ga.output_file);
+		simple_copyfile(ga.input_file,ga.output_file);
 	}
 }
 
@@ -185,7 +187,7 @@ int main( int argc, char *argv[] )
 				case 'p':
 					ga.preserve_ownership = true;
 				  	ga.preserve_mode = true;
-				 	 ga.preserve_timestamps = true;
+				 	ga.preserve_timestamps = true;
 				  	ga.need_preserve = true;
 				  	break;
 

@@ -74,7 +74,7 @@ static void decode_preserve_arg (char const *optarg)
 	  	break;
 
 	 case PRESERVE_LINK:
-	  	ga.preserve_links = true;
+	  	ga.preserve_links = true;		
 	  	break;
 
 	 case PRESERVE_ALL:
@@ -185,7 +185,7 @@ int main( int argc, char *argv[] )
 				case 'p':
 					ga.preserve_ownership = true;
 				  	ga.preserve_mode = true;
-				 	 ga.preserve_timestamps = true;
+				 	ga.preserve_timestamps = true;
 				  	ga.need_preserve = true;
 				  	break;
 

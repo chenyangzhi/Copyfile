@@ -1,3 +1,4 @@
+
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -6,26 +7,30 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <utime.h>
+#include <fcntl.h>
 #include "CopyFile.h"
+#include "hash.h"                         //引入hash算法只是为了有--preserve=links 保持了 源内的链接性
 
+extern globalArgs ga;
 void argmatch_valid (char const *const *arglist) 
 {	
 	int i;
-  	/*当错误输入发生时，正确输入应该被告知 */
+  	//当错误输入发生时，正确输入应该被告知 
  	fputs ("Valid arguments are:", stderr);
   	for (i = 0; arglist[i]; i++)
-	    	sfprintf(stderr,"%s",arglist[i]);
+	    	fprintf(stderr,"%s",arglist[i]);
  	putc ('\n', stderr);
 }
 int argmatch (const char *arg, const char *const *arglist)//比较选项是否准确匹配
 {
-	int i;                     /* arglist 的下标  */
-        int arglen;                /* arglist的长度*/
-        int no_match_flag = -1;           /* 没有准确匹配的标志 */
+	int i;                                            // arglist 的下标 
+        int arglen;                                       // arglist的长度
+        int no_match_flag = -1;                          // 没有准确匹配的标志
 
         arglen = strlen (arg);
 
-        /* 参数与所有的参数相匹配  */
+        //参数与所有的参数相匹配 
   	for (i = 0; arglist[i]; i++)
    	{
       		if (strncmp (arglist[i], arg, arglen) == 0)
@@ -45,10 +50,10 @@ int argument_match_report (const char *context, const char *arg, const char *con
 {
 	int res = argmatch (arg, arglist);
   	if (res >= 0)
-    	/* 成功匹配 */
+    	//成功匹配 
     		return res;
 
-  	/* 没有成功匹配，报告错误原因，及改正的方法 */
+  	// 没有成功匹配，报告错误原因，及改正的方法 
   	argmatch_invalid (context, arg);
   	argmatch_valid (arglist);
  	return -1;
@@ -77,6 +82,50 @@ file type_of_file(char* input_file_path)
 		return ENUM_DIR;
 	}
 }
+
+int preserve_method(struct stat info,char* output_file_path,char* input_file_path )
+{
+	char *ep;
+	int filehand_dst;
+	ino_t ik = ik;
+	dev_t dk = dk;
+	struct utimbuf preserve_timestamp;
+	preserve_timestamp.actime = info.st_atime;
+	preserve_timestamp.modtime = info.st_mtime;  
+	if(ga.need_preserve == true)
+	{
+		if(ga.preserve_links)
+		{
+			static hashmap* hmap = NULL;
+			if(hmap == NULL)
+				hmap = mk_hmap(int_hash_fn, int_compare_fn);
+			
+			if(ep = hmap_find(hmap, ik,dk))
+			{
+				link(ep, output_file_path);
+			}else{
+				hmap_add(hmap, ik, dk,input_file_path); 
+				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+			     }
+		}else{	
+			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+		}
+		if(ga.preserve_mode)
+		{
+			 chmod(output_file_path, info.st_mode);
+		}
+		if(ga.preserve_timestamps)
+		{
+			 utimes(output_file_path,&preserve_timestamp);
+		}
+		if(ga.preserve_ownership)
+		{
+			 chown(output_file_path, info.st_uid, info.st_gid);
+		}			
+	}
+	return filehand_dst;
+}
+
 void recursive_method(char* input_directory,char* output_directory)
 {
 	struct dirent* dirent_next = NULL;

@@ -1,11 +1,16 @@
 CC = gcc
 
-mycp:main.o SimpleCopyFile.o ArguMethod.o
-	$(CC) -g -o mycp SimpleCopyFile.o ArguMethod.o main.o 
+mycp:main.o SimpleCopyFile.o ArguMethod.o hash.o CopyFile.o 
+	$(CC) -g -o mycp SimpleCopyFile.o ArguMethod.o CopyFile.o hash.o main.o 
 main.o:main.c CopyFile.h
 	$(CC) -g -c main.c 
-SimpleCopyFile.o:SimpleCopyFile.c
+SimpleCopyFile.o:SimpleCopyFile.c  CopyFile.h
 	$(CC) -g -c SimpleCopyFile.c 
-ArguMethod.o:ArguMethod.c CopyFile.h
+ArguMethod.o:ArguMethod.c  CopyFile.h 
 	$(CC) -g -c ArguMethod.c  
-
+hash.o:hash.c hash.h
+	$(CC) -g -c hash.c
+CopyFile.o:CopyFile.h CopyFile.c
+	$(CC) -g -c CopyFile.c
+clean:
+	rm -f *.o mycp

@@ -68,19 +68,16 @@ file type_of_file(char* input_file_path)
                	exit(EXIT_FAILURE);
         }
 	switch (info.st_mode & S_IFMT) {
-          	case S_IFBLK:  printf("block device\n");            break;
+          	case S_IFBLK:  printf("block device\n");            return ENUM_BLOCKDEVICE;
            	case S_IFCHR:  printf("character device\n");        break;
-          	case S_IFDIR:  printf("directory\n");               break;
+          	case S_IFDIR:  printf("directory\n");               return ENUM_DIR;
            	case S_IFIFO:  printf("FIFO/pipe\n");               break;
            	case S_IFLNK:  printf("symlink\n");                 break;
            	case S_IFREG:  printf("regular file\n");            return ENUM_FILE;
            	case S_IFSOCK: printf("socket\n");                  break;
            	default:       printf("unknown?\n");                break;
         }
-	if( S_ISDIR(info.st_mode) )
-	{
-		return ENUM_DIR;
-	}
+	return ENUM_FILE;
 }
 
 int preserve_method(struct stat info,char* output_file_path,char* input_file_path )
@@ -158,6 +155,10 @@ void recursive_method(char* input_directory,char* output_directory)
 			strcat(cur_outputfile_path,"/");
 			recursive_method(cur_inputfile_path,cur_outputfile_path);	
 		}else{
+			if(1 == ga.need_symbolic_link)
+			{
+				symbol_link(cur_inputfile_path,cur_outputfile_path);
+			}
 			simple_copyfile(cur_inputfile_path,cur_outputfile_path);		
 		}
 	}

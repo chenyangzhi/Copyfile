@@ -153,13 +153,19 @@ void argu_action_excute()
 				}else
 					error_message("omitting the directory");
 			}else{
+				if( 1 == ga.need_symbolic_link )                   //symbolic_link选项开启
+					symbol_link(ga.input_file, ga.output_file);
 				simple_copyfile(ga.input_file, ga.output_file);
 			}
 			break;
 		default:
-			simple_copyfile(ga.input_file, ga.output_file);
+			if( 1 == ga.need_symbolic_link )
+			{
+				if( ga.num_of_files > 2)
+					error_message("the dst is not a directory");
+				symbol_link(ga.input_file, ga.output_file);
+			}
 	}
-	
 }
 
 int main( int argc, char *argv[] )

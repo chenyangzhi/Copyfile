@@ -28,6 +28,6 @@ int simple_copyfile(char* input_file_path,char* output_file_path)   //执行相�
 		write_file(filehand_dst,buf,n);
 	close(filehand_src);
 	close(filehand_dst);		
-        return 1;
+        return true;
 }
 

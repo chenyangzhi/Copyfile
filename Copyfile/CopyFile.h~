@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <stdbool.h>
 #define true 1
 #define false 0
 
@@ -41,7 +41,7 @@ typedef struct globalArgs {
 file type_of_file(char* inputFilePath);
 int simple_copy_file(char* inputFilePath,char* outputFilePath);
 void recursive_method(char* input,char* output);
-int preserve_method(struct stat info,char* output_file_path,char* input_file_path );
+int preserve_method(struct stat info,char* output_file_path, char* input_file_path );
 void argmatch_valid (char const *const *arglist);
 int argmatch (const char *arg, const char *const *arglist);
 void argmatch_invalid (const char *context, const char *value);

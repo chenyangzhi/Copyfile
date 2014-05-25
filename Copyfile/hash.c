@@ -45,16 +45,18 @@ void free_hmap(hashmap* hmap)
 static void oa_hmap_add(key_val_pair* map, int32 capacity,int32 (*hash_fn)(inode_key),inode_key ik,dev_key dk,file_path fp) 
 {
 	static int32 index;
-	index = hash_fn(ik) % capacity;
+	index = hash_fn(ik) % capacity + capacity;
 	while (map[index].fp != NULL) 
 	{           
 		//如果有值则已被添加，则线性的探测为空的位置
-		index = (index + 1) % capacity;
+		if( (index = (index + 1) % capacity) < 0 )
+			index += capacity;
 	}
 	
 	map[index].ik = ik;
 	map[index].dk = dk;
-	map[index].fp = fp;
+	map[index].fp = (char*) malloc(sizeof(char)*(strlen(fp)+1));
+	strcpy(map[index].fp,fp);
 }
 
 bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, file_path fp)
@@ -95,16 +97,13 @@ file_path hmap_find(hashmap* hmap, inode_key ik, dev_key dk)
 {
 	static int32 hash;
 	//DEBUG_INFO("get in=[%s] aaaa hmap->capacity=%d",(char *)in,hmap->capacity);
-
-	hash = hmap->hash_fn(ik) % hmap->capacity;	
-	//DEBUG_INFO("hash=%d",hash);
-
+	hash = int_hash_fn(ik) % hmap->capacity + hmap->capacity;
 	while (hmap->map[hash].fp != NULL) {
-		if (hmap->compare_fn(ik, hmap->map[hash].ik,dk,hmap->map[hash].dk)) {
-			//DEBUG_INFO("get in=[%s] bbbb",(char *)ik);
+		if (hmap->compare_fn(ik, hmap->map[hash].ik,dk,hmap->map[hash].dk)) 
+		{
 			return hmap->map[hash].fp;
 		}
-
+		
 		hash = (hash + 1) % hmap->capacity;
 	}
 	return NULL;
@@ -137,3 +136,23 @@ bool int_compare_fn(inode_key a, inode_key b, dev_key c,dev_key d)
 	return false;
 }
 
+void str_del_fn(val q) 
+{
+     	free(q);
+}
+void free_hmap(hashmap* hmap) {
+
+	static uint32_t it;
+	for (it=0; it < hmap->size; ++it) 
+	{
+		if (hmap->map[it].v != NULL) 
+		{
+	              hmap->del_fn(hmap->map[it].v);
+	        }
+	}
+		    free(hmap->map);
+	     
+		 
+	    free(hmap);
+
+	}

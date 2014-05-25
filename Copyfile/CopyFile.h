@@ -3,10 +3,10 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <stdbool.h>
 #define true 1
 #define false 0
-
+#define SUCCESS_LINK -2
 #define DEBUG_MESSAGE(s,d)  printf(s,d)
 
 typedef enum file{

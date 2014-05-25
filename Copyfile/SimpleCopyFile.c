@@ -16,11 +16,14 @@ int simple_copyfile(char* input_file_path,char* output_file_path)   //执行相�
 	int filehand_src,filehand_dst;
 	char buf[BUFFSIZE];
 	struct stat info;
-	stat(input_file_path, &info);  
+	int x;
+	x=1;
+	lstat(input_file_path, &info);  
 
 	filehand_src = open_file(input_file_path,O_RDONLY);
 	if(ga.need_preserve == true)
-		filehand_dst = preserve_method(info,output_file_path,input_file_path);
+		if((filehand_dst = preserve_method(info,output_file_path,input_file_path)) == SUCCESS_LINK)
+			return true;
 	else
 		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
 	

@@ -17,7 +17,7 @@ typedef struct key_val_pair key_val_pair;
 typedef struct hashmap hashmap;
 
 // 建造hash函数
-hashmap* mk_hmap(int32 (*hash_fn)(inode_key), bool (*compare_fn)(inode_key, inode_key, dev_key));
+hashmap* mk_hmap(int32 (*hash_fn)(inode_key), bool (*compare_fn)(inode_key a, inode_key b, dev_key c,dev_key d));
 void free_hmap(hashmap*);
 bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk,file_path fp);
 file_path hmap_find(hashmap* hmap, inode_key ik, dev_key dk);

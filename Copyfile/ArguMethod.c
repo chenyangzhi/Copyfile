@@ -82,10 +82,10 @@ file type_of_file(char* input_file_path)
 
 int preserve_method(struct stat info,char* output_file_path,char* input_file_path )
 {
-	char *ep;
+	int bufsiz = 512;
+	char buf[512];
 	int filehand_dst;
-	ino_t ik = ik;
-	dev_t dk = dk;
+	char *ep;
 	struct utimbuf preserve_timestamp;
 	preserve_timestamp.actime = info.st_atime;
 	preserve_timestamp.modtime = info.st_mtime;  
@@ -94,14 +94,33 @@ int preserve_method(struct stat info,char* output_file_path,char* input_file_pat
 		if(ga.preserve_links)
 		{
 			static hashmap* hmap = NULL;
-			if(hmap == NULL)
+			ino_t ik;
+			dev_t dk;
+			if(hmap == NULL)                                       //首次创建hashtable
 				hmap = mk_hmap(int_hash_fn, int_compare_fn);
-			
-			if(ep = hmap_find(hmap, ik,dk))
+			if(S_ISLNK(info.st_mode))
 			{
-				link(ep, output_file_path);
+				struct stat sb;
+				int size = readlink(input_file_path, buf,bufsiz);
+				buf[size] = 0;
+				stat(buf,  &sb);
+				ik = sb.st_ino;
+				dk = sb.st_dev;
+				input_file_path = realpath(buf,input_file_path);
 			}else{
-				hmap_add(hmap, ik, dk,input_file_path); 
+				ik = info.st_ino;
+			        dk = info.st_dev;
+				sprintf(buf,"%s",input_file_path);
+			}	
+			
+			
+			if( (ep = hmap_find(hmap, ik,dk)) != NULL)
+			{
+				
+				link_file(ep, output_file_path);
+				return SUCCESS_LINK;
+			}else{
+				hmap_add(hmap, ik, dk,output_file_path); 
 				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
 			     }
 		}else{	

@@ -37,6 +37,7 @@ enum File_attribute
 };
 globalArgs ga;
 file ot = -1;
+file it = -1;
 static const char* optString = "abdfHilLprstuvxPRS:TV:";
 
 static char const* const preserve_args[] =
@@ -114,65 +115,68 @@ void out_file_parse(char* pathname,char* real_name)
 			if(ga.num_of_files > 2)
 			{
 				display_usage();
-				error_message("too many files for output file,the output must be a directory");
+				printf("too many files for output file,the output must be a directory");
 			}
-			ga.output_file = real_name;
+			ga.output_file = realpath(pathname,real_name);
 		}else{
 	
-			if(realpath(pathname,real_name) == 0)
+			if((ga.output_file = realpath(pathname,real_name)) == NULL)
 			{
-		
-				perror("realpath error");
-				exit(EXIT_FAILURE);
-			}else{		
-				ga.output_file = real_name;
+				error_message("realpath error");
+			}else{						
 				strcat(ga.output_file,"/");             //如果输出的文件是目录，则在目录路径名后面加上“/”
 			}
-		
 		}
-	}else{
-		ga.output_file = pathname;
+	}else{		
+		ga.output_file = absolute_path(pathname,real_name);
 	}
 }
 
-void difftype_copy(file
 void argu_action_excute()
 {
 	int i;
+	char temp_outpath[512];
+	struct stat info;
 	switch(ot)
 	{
-		case ENUM_DIR:
-			strcat(ga.output_file,basename(ga.input_file));
-			if((type_of_file(ga.input_file) == ENUM_DIR))
+		sprintf(temp_outpath,"%s",ga.output_file);
+		case ENUM_DIR:			
+			if(it == ENUM_DIR)
 			{
+				if(is_parent_dir(ga.input_file,temp_outpath))
+					printf("can't copy the parent directory");
+				strcat(temp_outpath,basename(ga.input_file));
 				if(1 == ga.need_recursive)		
 				{	
-					mkdir(ga.output_file,0775);
-					strcat(ga.output_file,"/");
-					strcat(ga.input_file,"/");
-					recursive_method(ga.input_file,ga.output_file);
+					mkdir(temp_outpath,0775);
+					strcat(temp_outpath,"/");
+					strcat(temp_outpath,"/");
+					recursive_method(temp_outpath,temp_outpath);
 				}else
-					error_message("omitting the directory");
+					printf("omitting the directory");
 			}else{
-				simple_copyfile(ga.input_file, ga.output_file);
-			}else if(1 == ga.need_symbolic_link){
-				if(-1 == symlink(ga.input_file,ga.output_file))
-				{
-					perror("symlink error");
-				}				
-			}else{		
-				simple_copyfile(ga.input_file,ga.output_file);
+				strcat(temp_outpath,basename(ga.input_file));
+				if( 1 == ga.need_symbolic_link )                   //symbolic_link选项开启
+					symbol_link(ga.input_file, temp_outpath);
+				simple_copyfile(ga.input_file, temp_outpath);
 			}
 			break;
+		default:
+			if( 1 == ga.need_symbolic_link )
+			{
+				if( ga.num_of_files > 2)
+					printf("the dst is not a directory");
+				symbol_link(ga.input_file, temp_outpath);
+			}else
+				simple_copyfile(ga.input_file, temp_outpath);
 			
 	}
-	
 }
 
 int main( int argc, char *argv[] )
 {
 	int i,opt = 0;
-	ga.need_recursive = 0;		/* false */
+	ga.need_recursive = 0;		/* 初始化 */
 	char real_inputfile_path[512];
 	char real_outputfile_path[512];
 	char outputfile_dir[512];
@@ -215,7 +219,8 @@ int main( int argc, char *argv[] )
 				break;
 			case 's':
 				ga.need_symbolic_link = 1;
-			case PRESERVE_ATTRIBUTES_OPTION:
+				break;
+			case 'p':
           			if (optarg == NULL)
 				{
 				      /* 与下面的p选项处理相同  */
@@ -225,12 +230,12 @@ int main( int argc, char *argv[] )
 				        break;
 				}
 
-				case 'p':
-					ga.preserve_ownership = true;
-				  	ga.preserve_mode = true;
-				 	ga.preserve_timestamps = true;
-				  	ga.need_preserve = true;
-				  	break;
+		       case 'P':
+				ga.preserve_ownership = true;
+				ga.preserve_mode = true;
+				ga.preserve_timestamps = true;
+				ga.need_preserve = true;
+				break;
 
 		}
 		
@@ -243,8 +248,14 @@ int main( int argc, char *argv[] )
 	
 	for(i = optind; i < argc-1 ; i++)
 	{
-		ga.input_file = realpath(argv[optind],real_inputfile_path);
-	  	argu_action_excute(ga.input_file);
+		it = type_of_file(argv[i]);                            //判断文件可不可达
+		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
+		if(str_cmp(ga.input_file,ga.output_file,ot) == false)
+		{
+	  		argu_action_excute(ga.input_file);
+		}else{
+			printf("it can't copy the same file");
+		}
 	}
         
 	

@@ -19,28 +19,37 @@ int open_file(const char *pathname, int flags, mode_t mode)   //包装了open函
 	int filehand_dst;
 	if((filehand_dst = open(pathname,flags, mode)) < 0)
 	{
-		error_message("open dest file error");
+		error_message(pathname);
 	}
 	return filehand_dst;
 }
 
-int read_file(int filehand_src,char* buf,int buff_size)
+int read_file(int filehand_src,char* buf,int buff_size, const char* pathname)
 {
 	int n;
 	if((n = read(filehand_src,buf, buff_size)) < 0)
+	{
+		fprintf(stderr,"%s ",pathname);
 		error_message("read erro");
+	}
 	return n;
 }
-void write_file(int filehand_dst,char* buf,int n)
+void write_file(int filehand_dst,char* buf,int n, const char* pathname)
 {
 	if (write(filehand_dst,buf,n) != n)
-		error_message("write erro");
+		{
+			fprintf(stderr,"%s ",pathname);
+			error_message("write erro");		
+		}
 }
 
 void symbol_link(const char* old_path, const char* new_path)
 {
 	if(symlink(old_path,new_path) != 0)
+	{
+		fprintf(stderr,"%s ",old_path);
 		error_message("symlink error");
+	}
 }
 
 bool is_parent_dir(const char* input_path,const char* output_path)
@@ -97,6 +106,7 @@ void link_file(const char* path1,const char* path2)
 {
 	if(0 != link(path1,path2))
 	{
+		fprintf(stderr,"%s ",path1);
 		error_message("link error");
 	}
 	return;
@@ -105,6 +115,7 @@ void file_status(const char* path,struct stat* st)
 {
 	if(0 != lstat(path,st))
 	{
+		fprintf(stderr,"%s ",path);
 		error_message("stat error");
 	}
 }

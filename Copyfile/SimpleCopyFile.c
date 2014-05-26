@@ -18,8 +18,7 @@ int simple_copyfile(const char* input_file_path,const char* output_file_path)   
 	char buf[BUFFSIZE];
 	char lf[MAX_PATH_LENGTH];
 	struct stat info;
-	int x;
-	x=1;
+
 	file_status(input_file_path, &info);  
 	if(ga.need_preserve == true)
 	{
@@ -41,8 +40,8 @@ int simple_copyfile(const char* input_file_path,const char* output_file_path)   
 		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
 	}
 	filehand_src = open_file(input_file_path,O_RDONLY);
-        while((n = read_file(filehand_src,buf,BUFFSIZE)) > 0)
-		write_file(filehand_dst,buf,n);
+        while((n = read_file(filehand_src,buf,BUFFSIZE,input_file_path)) > 0)
+		write_file(filehand_dst,buf,n,output_file_path);
 	close(filehand_src);
 	close(filehand_dst);		
         return true;

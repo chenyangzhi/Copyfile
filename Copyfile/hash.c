@@ -9,7 +9,7 @@ struct key_val_pair
 {
 	inode_key ik;
 	dev_key   dk;
-	file_path fp;
+	char* fp;
 };
 
 struct hashmap 
@@ -37,12 +37,21 @@ hashmap* mk_hmap(int32 (*hash_fn)(inode_key),bool (*compare_fn)(inode_key, inode
 void free_hmap(hashmap* hmap) 
 {
 	static int32 it;
+	for (it=0; it < hmap->size; ++it) 
+	{
+		if (hmap->map[it].fp != NULL) 
+		{
+	              free(hmap->map[it].fp);
+	        }
+	}
+		    
 	free(hmap->map);
 	free(hmap);
+
 }
 
 // 由于考虑到链接文件在文件系统并不是很多，采用开放地址插入算法
-static void oa_hmap_add(key_val_pair* map, int32 capacity,int32 (*hash_fn)(inode_key),inode_key ik,dev_key dk,file_path fp) 
+static void oa_hmap_add(key_val_pair* map, int32 capacity,int32 (*hash_fn)(inode_key),inode_key ik,dev_key dk,const char* fp) 
 {
 	static int32 index;
 	index = hash_fn(ik) % capacity + capacity;
@@ -59,7 +68,7 @@ static void oa_hmap_add(key_val_pair* map, int32 capacity,int32 (*hash_fn)(inode
 	strcpy(map[index].fp,fp);
 }
 
-bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, file_path fp)
+bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, const char* fp)
 {
 	// 性能下降了，所以要增加hashtable的大小
 	if (((float) hmap->size) / hmap->capacity > 0.70) {
@@ -79,12 +88,12 @@ bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, file_path fp)
 			if (hmap->map[it].fp != NULL) 
 			{
 				oa_hmap_add(temp, hmap->capacity, hmap->hash_fn, ik,dk, fp);
+				free(hmap->map[it].fp);
 			}
 		}
 		//全部迁移
 		free(hmap->map);
 		hmap->map = temp;
-		//DEBUG_INFO("hmap->capacity=%d",hmap->capacity);
 	}
 	
 	oa_hmap_add(hmap->map, hmap->capacity, hmap->hash_fn, ik,dk, fp);
@@ -93,7 +102,7 @@ bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, file_path fp)
 	return true;
 }
 
-file_path hmap_find(hashmap* hmap, inode_key ik, dev_key dk) 
+char* hmap_find(hashmap* hmap, inode_key ik, dev_key dk) 
 {
 	static int32 hash;
 	//DEBUG_INFO("get in=[%s] aaaa hmap->capacity=%d",(char *)in,hmap->capacity);
@@ -136,23 +145,4 @@ bool int_compare_fn(inode_key a, inode_key b, dev_key c,dev_key d)
 	return false;
 }
 
-void str_del_fn(val q) 
-{
-     	free(q);
-}
-void free_hmap(hashmap* hmap) {
 
-	static uint32_t it;
-	for (it=0; it < hmap->size; ++it) 
-	{
-		if (hmap->map[it].v != NULL) 
-		{
-	              hmap->del_fn(hmap->map[it].v);
-	        }
-	}
-		    free(hmap->map);
-	     
-		 
-	    free(hmap);
-
-	}

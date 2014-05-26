@@ -43,7 +43,7 @@ int argmatch (const char *arg, const char *const *arglist)//比较选项是否�
 }
 void argmatch_invalid (const char *context, const char *arg)
 {
-	fprintf(stderr,"for %s: can't resolve #%s#",context,arg);
+	fprintf(stderr,"for %s: can't resolve #%s#/t",context,arg);
 	return;
 }
 int argument_match_report (const char *context, const char *arg, const char *const *arglist)
@@ -59,31 +59,26 @@ int argument_match_report (const char *context, const char *arg, const char *con
  	return -1;
 }
 
-file type_of_file(char* input_file_path)
+file type_of_file(const char* input_file_path)
 {
 	struct stat info;
-	if (stat(input_file_path, &info) == -1) {
-             	perror("stat");
-		fprintf(stderr,"stat file %s\n",input_file_path);
-               	exit(EXIT_FAILURE);
-        }
+	file_status(input_file_path,&info);
 	switch (info.st_mode & S_IFMT) {
           	case S_IFBLK:  printf("block device\n");            return ENUM_BLOCKDEVICE;
-           	case S_IFCHR:  printf("character device\n");        break;
+           	case S_IFCHR:  printf("character device\n");        return ENUM_CHARDEVICE;
           	case S_IFDIR:  printf("directory\n");               return ENUM_DIR;
-           	case S_IFIFO:  printf("FIFO/pipe\n");               break;
-           	case S_IFLNK:  printf("symlink\n");                 break;
+           	case S_IFIFO:  printf("FIFO/pipe\n");               return ENUM_FP;
+           	case S_IFLNK:  printf("symlink\n");                 return ENUM_SYMLINK;
            	case S_IFREG:  printf("regular file\n");            return ENUM_FILE;
-           	case S_IFSOCK: printf("socket\n");                  break;
-           	default:       printf("unknown?\n");                break;
+           	case S_IFSOCK: printf("socket\n");                  return ENUM_SOCKET;
+           	default:       printf("unknown?\n");                return UNKNOWN;
         }
-	return ENUM_FILE;
 }
 
-int preserve_method(struct stat info,char* output_file_path,char* input_file_path )
+int preserve_method(struct stat info,const char* input_file_path, const char* output_file_path )
 {
-	int bufsiz = 512;
-	char buf[512];
+	//int bufsiz = MAX_PATH_LENGTH;
+	char buf[MAX_PATH_LENGTH];
 	int filehand_dst;
 	char *ep;
 	struct utimbuf preserve_timestamp;
@@ -101,16 +96,17 @@ int preserve_method(struct stat info,char* output_file_path,char* input_file_pat
 			if(S_ISLNK(info.st_mode))
 			{
 				struct stat sb;
-				int size = readlink(input_file_path, buf,bufsiz);
-				buf[size] = 0;
-				stat(buf,  &sb);
+				//int size = readlink(input_file_path, buf,bufsiz);
+				//buf[size] = 0;
+				input_file_path = realpath(input_file_path,buf);
+				file_status(buf,  &sb);
 				ik = sb.st_ino;
 				dk = sb.st_dev;
-				input_file_path = realpath(buf,input_file_path);
+				
 			}else{
 				ik = info.st_ino;
 			        dk = info.st_dev;
-				sprintf(buf,"%s",input_file_path);
+				//sprintf(buf,"%s",input_file_path);
 			}	
 			
 			
@@ -138,16 +134,18 @@ int preserve_method(struct stat info,char* output_file_path,char* input_file_pat
 		{
 			 chown(output_file_path, info.st_uid, info.st_gid);
 		}			
+	}else{
+		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
 	}
 	return filehand_dst;
 }
 
-void recursive_method(char* input_directory,char* output_directory)
+void recursive_method(const char* input_directory,const char* output_directory)
 {
 	struct dirent* dirent_next = NULL;
 	DIR* to_readDir = NULL;
-	char cur_inputfile_path[512];
-	char cur_outputfile_path[512];       
+	char cur_inputfile_path[MAX_PATH_LENGTH];
+	char cur_outputfile_path[MAX_PATH_LENGTH];       
 	memset(cur_inputfile_path,0,sizeof(cur_inputfile_path));
 	memset(cur_outputfile_path,0,sizeof(cur_outputfile_path));	
 	to_readDir = opendir(input_directory);
@@ -163,15 +161,14 @@ void recursive_method(char* input_directory,char* output_directory)
 		if(strcmp(".",dirent_next->d_name )== 0|| strcmp("..",dirent_next->d_name) == 0)
 		{
 			continue;
-		}
+		}		
 		strcat(cur_inputfile_path,dirent_next->d_name);
 		strcat(cur_outputfile_path,dirent_next->d_name);
-		
        		if(type_of_file(cur_inputfile_path) == ENUM_DIR)
 		{
-			mkdir(cur_outputfile_path,0775);
-			strcat(cur_inputfile_path,"/");
 			strcat(cur_outputfile_path,"/");
+			strcat(cur_inputfile_path,"/");
+			mkdir(cur_outputfile_path,0775);
 			recursive_method(cur_inputfile_path,cur_outputfile_path);	
 		}else{
 			if(1 == ga.need_symbolic_link)

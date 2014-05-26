@@ -45,6 +45,7 @@ static char const* const preserve_args[] =
    "mode", "timestamps", "ownership", "links", "all", 0
 };
 
+//
 static void decode_preserve_arg (char const *optarg)
 {
 
@@ -105,7 +106,7 @@ void display_usage( void )
 	exit( EXIT_FAILURE );
 }
 
-void out_file_parse(char* pathname,char* real_name)
+void out_file_parse(const char* pathname,char real_name[])
 {
 	if(0 == access(pathname,F_OK))
 	{
@@ -132,12 +133,14 @@ void out_file_parse(char* pathname,char* real_name)
 	}
 }
 
-void argu_action_excute()
+void argu_action_excute()    //
 {
 	int i;
-	char temp_outpath[512];
+	char temp_outpath[MAX_PATH_LENGTH];
+	char temp_inpath[MAX_PATH_LENGTH];
 	struct stat info;
 	sprintf(temp_outpath,"%s",ga.output_file);
+	sprintf(temp_inpath,"%s",ga.input_file);
 	switch(ot)
 	{
 	
@@ -146,13 +149,14 @@ void argu_action_excute()
 			{
 				if(is_parent_dir(ga.input_file,temp_outpath))
 					printf("can't copy the parent directory");
-				strcat(temp_outpath,basename(ga.input_file));
+				
+				strcat(temp_outpath,basename(temp_inpath));
 				if(1 == ga.need_recursive)		
 				{	
+					strcat(temp_outpath,"/");
+					strcat(temp_inpath,"/");
 					mkdir(temp_outpath,0775);
-					strcat(temp_outpath,"/");
-					strcat(temp_outpath,"/");
-					recursive_method(temp_outpath,temp_outpath);
+					recursive_method(temp_inpath,temp_outpath);
 				}else
 					printf("omitting the directory");
 			}else{
@@ -177,13 +181,12 @@ void argu_action_excute()
 int main( int argc, char *argv[] )
 {
 	int i,opt = 0;
-	ga.need_recursive = 0;		/* 初始化 */
-	char real_inputfile_path[512];
-	char real_outputfile_path[512];
-	char outputfile_dir[512];
-	char outputnewfile_name[512];
-	char* temp_argv;	
-	struct option long_options[] = { {"archive", no_argument, NULL, 'a'},
+	char real_inputfile_path[MAX_PATH_LENGTH];
+	char real_outputfile_path[MAX_PATH_LENGTH];
+	//char outputfile_dir[MAX_PATH_LENGTH];
+	//char outputnewfile_name[MAX_PATH_LENGTH];
+	//char* temp_argv;	
+	struct option long_options[] = {{"archive", no_argument, NULL, 'a'},
 					{"attributes_only", no_argument, NULL,ATTRIBUTES_ONLY_OPTION },
  					{"backup", optional_argument, NULL, 'b'},
   					{"copy-contents", no_argument, NULL, COPY_CONTENTS_OPTION},
@@ -210,7 +213,7 @@ int main( int argc, char *argv[] )
 					{"help",no_argument,NULL,'h'},
   					{NULL, 0, NULL, 0}
 				     };
-
+	
 	opt = getopt_long( argc, argv,optString,long_options,NULL );
 	while( opt != -1 ) {
 		switch( opt ) {
@@ -230,12 +233,15 @@ int main( int argc, char *argv[] )
 				        ga.need_preserve = true;
 				        break;
 				}
-
-		       case 'P':
-				ga.preserve_ownership = true;
+			case NO_PRESERVE_ATTRIBUTES_OPTION:
 				ga.preserve_mode = true;
+				ga.preserve_ownership = true;
 				ga.preserve_timestamps = true;
-				ga.need_preserve = true;
+				break;
+		       	case 'P':
+				ga.need_no_derence = true;                         //zhi dui symbolic you yong
+				break;
+			default:
 				break;
 
 		}
@@ -253,7 +259,7 @@ int main( int argc, char *argv[] )
 		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
 		if(str_cmp(ga.input_file,ga.output_file,ot) == false)
 		{
-	  		argu_action_excute(ga.input_file);
+	  		argu_action_excute();
 		}else{
 			printf("it can't copy the same file");
 		}

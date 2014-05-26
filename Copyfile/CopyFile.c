@@ -37,13 +37,13 @@ void write_file(int filehand_dst,char* buf,int n)
 		error_message("write erro");
 }
 
-void symbol_link(char* old_path, char* new_path)
+void symbol_link(const char* old_path, const char* new_path)
 {
 	if(symlink(old_path,new_path) != 0)
 		error_message("symlink error");
 }
 
-bool is_parent_dir(char* input_path,char* output_path)
+bool is_parent_dir(const char* input_path,const char* output_path)
 {
 	if(strlen(input_path) > strlen(output_path))
 			return false;	
@@ -57,7 +57,7 @@ bool is_parent_dir(char* input_path,char* output_path)
 		return true;
 	return false;
 }
-bool str_cmp(char* str1,char* str2,file flag)
+bool str_cmp(const char* str1,const char* str2,const file flag)
 {
 	if(flag == ENUM_DIR)
 	{
@@ -77,19 +77,23 @@ bool str_cmp(char* str1,char* str2,file flag)
 		return  !strcmp(str1,str2);
 	}
 }
-char* absolute_path(char* relapath,char* real_name)
+char* absolute_path(const char* relapath,char real_name[])
 {
-	char* base_name,*dir_name;
+	char base_name[MAX_PATH_LENGTH],dir_name[MAX_PATH_LENGTH],
+		*file_base_name,*parent_name;
 	sprintf(real_name,"%s",relapath);
-	base_name = basename(relapath);
-	dir_name = dirname(real_name);
-	if(realpath(dir_name,real_name) == NULL)
+	sprintf(base_name,"%s",relapath);
+	sprintf(dir_name,"%s",relapath);
+	file_base_name = basename(base_name);
+	
+	parent_name = dirname(dir_name);
+	if(realpath(parent_name,real_name) == NULL)
 		printf("no this document:%s",dir_name);
 	real_name = strcat(real_name,"/");
-	return strcat(real_name,base_name);
+	return strcat(real_name,file_base_name);
 	
 }
-void link_file(char* path1, char* path2)
+void link_file(const char* path1,const char* path2)
 {
 	if(0 != link(path1,path2))
 	{
@@ -97,3 +101,12 @@ void link_file(char* path1, char* path2)
 	}
 	return;
 }
+void file_status(const char* path,struct stat* st)
+{
+	if(0 != lstat(path,st))
+	{
+		error_message("stat error");
+	}
+}
+
+

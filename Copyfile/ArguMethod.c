@@ -13,6 +13,7 @@
 #include "hash.h"                         //引入hash算法只是为了有--preserve=links 保持了 源内的链接性
 
 extern globalArgs ga;
+extern int overwrite;
 void argmatch_valid (char const *const *arglist) 
 {	
 	int i;
@@ -64,15 +65,31 @@ file type_of_file(const char* input_file_path)
 	struct stat info;
 	file_status(input_file_path,&info);
 	switch (info.st_mode & S_IFMT) {
-          	case S_IFBLK:  printf("block device\n");            return ENUM_BLOCKDEVICE;
-           	case S_IFCHR:  printf("character device\n");        return ENUM_CHARDEVICE;
-          	case S_IFDIR:  printf("directory\n");               return ENUM_DIR;
-           	case S_IFIFO:  printf("FIFO/pipe\n");               return ENUM_FP;
-           	case S_IFLNK:  printf("symlink\n");                 return ENUM_SYMLINK;
-           	case S_IFREG:  printf("regular file\n");            return ENUM_FILE;
-           	case S_IFSOCK: printf("socket\n");                  return ENUM_SOCKET;
-           	default:       printf("unknown?\n");                return UNKNOWN;
+          	case S_IFBLK:             	return ENUM_BLOCKDEVICE;
+           	case S_IFCHR:        		return ENUM_CHARDEVICE;
+          	case S_IFDIR:              	return ENUM_DIR;
+           	case S_IFIFO:           	return ENUM_FP;
+           	case S_IFLNK:                	return ENUM_SYMLINK;
+           	case S_IFREG:            	return ENUM_FILE;
+           	case S_IFSOCK:                  return ENUM_SOCKET;
+           	default:                      	return UNKNOWN;
         }
+}
+
+bool interactivity_method(const char* output_file_path)
+{
+	if(0 == access(output_file_path,F_OK))
+	{
+			char c;
+			printf("mycp: overwrite '%s'? y/n",output_file_path);
+			if( (c = getc(stdin)) == 'y' )
+			{	
+				overwrite = 0xffff;
+				return true;
+			}else{
+				return false;
+			}
+	}
 }
 
 int preserve_method(struct stat info,const char* input_file_path, const char* output_file_path )
@@ -117,10 +134,10 @@ int preserve_method(struct stat info,const char* input_file_path, const char* ou
 				return SUCCESS_LINK;
 			}else{
 				hmap_add(hmap, ik, dk,output_file_path); 
-				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|O_EXCL, 0775);
 			     }
 		}else{	
-			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|O_EXCL, 0775);
 		}
 		if(ga.preserve_mode)
 		{
@@ -135,7 +152,7 @@ int preserve_method(struct stat info,const char* input_file_path, const char* ou
 			 chown(output_file_path, info.st_uid, info.st_gid);
 		}			
 	}else{
-		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT||O_EXCL, 0775);
 	}
 	return filehand_dst;
 }

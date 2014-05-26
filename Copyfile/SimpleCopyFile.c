@@ -11,6 +11,8 @@
 #define BUFFSIZE  131072
 extern globalArgs ga;
 extern file it;
+int overwrite = O_EXCL;
+
 int simple_copyfile(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作
 {
 	int n;
@@ -18,8 +20,17 @@ int simple_copyfile(const char* input_file_path,const char* output_file_path)   
 	char buf[BUFFSIZE];
 	char lf[MAX_PATH_LENGTH];
 	struct stat info;
-
-	file_status(input_file_path, &info);  
+	
+	file_status(input_file_path, &info);
+	if(ga.need_interactive)
+	{
+		if(!interactivity_method(output_file_path))
+		{
+			return  true;
+		}						
+  	}else{
+		overwrite = O_EXCL;
+	}	
 	if(ga.need_preserve == true)
 	{
 		if((filehand_dst = preserve_method(info,input_file_path,output_file_path)) == SUCCESS_LINK)
@@ -35,9 +46,9 @@ int simple_copyfile(const char* input_file_path,const char* output_file_path)   
 	}else if(ENUM_SYMLINK == it)
 	{
 		input_file_path = realpath(input_file_path,lf);
-		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
 	}else{
-		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT, 0775);
+		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
 	}
 	filehand_src = open_file(input_file_path,O_RDONLY);
         while((n = read_file(filehand_src,buf,BUFFSIZE,input_file_path)) > 0)

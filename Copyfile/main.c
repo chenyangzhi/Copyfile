@@ -158,7 +158,7 @@ void argu_action_excute()    //
 					mkdir(temp_outpath,0775);
 					recursive_method(temp_inpath,temp_outpath);
 				}else
-					printf("omitting the directory");
+					printf("omitting the directory\n");
 			}else{
 				strcat(temp_outpath,basename(ga.input_file));
 				if( 1 == ga.need_symbolic_link )                   //symbolic_link选项开启
@@ -241,6 +241,10 @@ int main( int argc, char *argv[] )
 		       	case 'P':
 				ga.need_no_derence = true;                         //zhi dui symbolic you yong
 				break;
+			case 'i':
+				ga.need_interactive = true;
+			case 'n':
+				ga.need_no_clobber = true; 
 			default:
 				break;
 
@@ -261,7 +265,7 @@ int main( int argc, char *argv[] )
 		{
 	  		argu_action_excute();
 		}else{
-			printf("it can't copy the same file");
+			printf("it can't copy the same file\n");
 		}
 	}
         

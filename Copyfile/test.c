@@ -1,3 +1,4 @@
+<<<<<<< HEAD
  #include <sys/types.h>
        #include <sys/stat.h>
        #include <time.h>
@@ -31,4 +32,21 @@
            default:       printf("unknown?\n");                break;
            }
 	   exit(EXIT_SUCCESS);
+=======
+#include <sys/types.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <stdio.h>
+main()
+{
+    DIR * dir;
+    struct dirent * ptr;
+    int i;
+    dir = opendir("/home/coco");
+    while((ptr = readdir(dir)) != NULL)
+    {
+        printf("d_name : %s\n", ptr->d_name);
+    }
+    closedir(dir);
+>>>>>>> 7628c39d817961924a6f72ab41642547f2161ec0
 }

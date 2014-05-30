@@ -1,0 +1,143 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "CopyFile.h"
+#include "hash.h"             
+
+
+struct key_val_pair 
+{
+	inode_key ik;
+	dev_key   dk;
+	file_path fp;
+};
+
+struct hashmap 
+{
+	key_val_pair* map;
+	int32 size;
+	int32 capacity;
+	int32 (*hash_fn)(inode_key);
+	bool (*compare_fn)(inode_key, inode_key, dev_key, dev_key);
+};
+
+// hash函数，比较函数，释放函数
+hashmap* mk_hmap(int32 (*hash_fn)(inode_key),bool (*compare_fn)(inode_key, inode_key, dev_key, dev_key)) {					
+	hashmap* hmap = (hashmap*) calloc(sizeof(hashmap),1);
+	memset(hmap,0,sizeof(hashmap));
+	hmap->map = (key_val_pair*) calloc(sizeof(key_val_pair) , HMAP_PRESET_SIZE);
+	memset(hmap->map,0,sizeof(key_val_pair) * HMAP_PRESET_SIZE);
+	hmap->size = 0;
+	hmap->capacity = HMAP_PRESET_SIZE;
+	hmap->hash_fn = hash_fn;
+	hmap->compare_fn = compare_fn;
+	return hmap;
+}
+
+void free_hmap(hashmap* hmap) 
+{
+	static int32 it;
+	free(hmap->map);
+	free(hmap);
+}
+
+// 由于考虑到链接文件在文件系统并不是很多，采用开放地址插入算法
+static void oa_hmap_add(key_val_pair* map, int32 capacity,int32 (*hash_fn)(inode_key),inode_key ik,dev_key dk,file_path fp) 
+{
+	static int32 index;
+	index = hash_fn(ik) % capacity + capacity;
+	while (map[index].fp != NULL) 
+	{           
+		//如果有值则已被添加，则线性的探测为空的位置
+		if( (index = (index + 1) % capacity) < 0 )
+			index += capacity;
+	}
+	
+	map[index].ik = ik;
+	map[index].dk = dk;
+	map[index].fp = (char*) malloc(sizeof(char)*(strlen(fp)+1));
+	strcpy(map[index].fp,fp);
+}
+
+bool hmap_add(hashmap* hmap, inode_key ik, dev_key dk, file_path fp)
+{
+	// 性能下降了，所以要增加hashtable的大小
+	if (((float) hmap->size) / hmap->capacity > 0.70) {
+		key_val_pair* temp = (key_val_pair*) malloc(hmap->capacity * HMAP_GROWTH_RATE);
+		//DEBUG_INFO("hmap->capacity=%d",hmap->capacity);
+		if (temp != NULL) {
+			hmap->capacity *= HMAP_GROWTH_RATE;
+		} else {
+			//DEBUG_INFO("out of memery",NULL);//内存不足
+			return false;
+		}
+		
+		// 从旧的table逐个移动到新的table
+		static int32 it;
+		for (it=0; it < hmap->capacity; ++it) 
+		{
+			if (hmap->map[it].fp != NULL) 
+			{
+				oa_hmap_add(temp, hmap->capacity, hmap->hash_fn, ik,dk, fp);
+			}
+		}
+		//全部迁移
+		free(hmap->map);
+		hmap->map = temp;
+		//DEBUG_INFO("hmap->capacity=%d",hmap->capacity);
+	}
+	
+	oa_hmap_add(hmap->map, hmap->capacity, hmap->hash_fn, ik,dk, fp);
+	hmap->size += 1;
+	//DEBUG_INFO("hmap->capacity=%d",hmap->capacity);
+	return true;
+}
+
+file_path hmap_find(hashmap* hmap, inode_key ik, dev_key dk) 
+{
+	static int32 hash;
+	//DEBUG_INFO("get in=[%s] aaaa hmap->capacity=%d",(char *)in,hmap->capacity);
+	hash = int_hash_fn(ik) % hmap->capacity + hmap->capacity;
+	while (hmap->map[hash].fp != NULL) {
+		if (hmap->compare_fn(ik, hmap->map[hash].ik,dk,hmap->map[hash].dk)) 
+		{
+			return hmap->map[hash].fp;
+		}
+		
+		hash = (hash + 1) % hmap->capacity;
+	}
+	return NULL;
+}
+
+// Robert Jenkins' 32位的hash函数
+int32 int_hash_fn(inode_key in) 
+{
+	static int32 a;
+	a = (int32) in;
+	
+	a = (a+0x7ed55d16) + (a << 12);
+	a = (a^0xc761c23c) ^ (a >> 19);
+	a = (a+0x165667b1) + (a << 5);
+	a = (a+0xd3a2646c) ^ (a << 9);
+	a = (a+0xfd7046c5) + (a << 3);
+	a = (a^0xb55a4f09) ^ (a >> 16);
+	
+	return a;
+}
+
+bool int_compare_fn(inode_key a, inode_key b, dev_key c,dev_key d) 
+{
+	bool ei,ed;	
+	ei = (a == b ? true : false);
+	ed = (c == d ? true : false);
+
+	if( ei == true && ed == true)
+		return true;
+	return false;
+}
+
+void str_del_fn(val q) 
+{
+     	free(q);
+}
+

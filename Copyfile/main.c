@@ -52,6 +52,8 @@ static char const* const backup_args[] =
 static backup_arg decode_backup_arg(char const *optarg)
 {
 	backup_arg a;
+	char *optarg_writable = strdup (optarg);
+	char *s = optarg_writable;
 	return a;
 }
 static void decode_preserve_arg (char const *optarg)
@@ -187,14 +189,14 @@ int main( int argc, char *argv[] )
 	//char outputnewfile_name[MAX_PATH_LENGTH];
 	//char* temp_argv;	
 	struct option long_options[] = {{"archive", no_argument, NULL, 'a'},
-					{"attributes_only", no_argument, NULL,ATTRIBUTES_ONLY_OPTION },
+					{"attributes-only", no_argument, NULL,ATTRIBUTES_ONLY_OPTION },
  					{"backup", optional_argument, NULL, 'b'},
   					{"copy-contents", no_argument, NULL, COPY_CONTENTS_OPTION},
-  					{"dereference", no_argument, NULL, 'L'},
+  					{"deference", no_argument, NULL, 'L'},
   					{"force", no_argument, NULL, 'f'},
   					{"interactive", no_argument, NULL, 'i'},
  				        {"link", no_argument, NULL, 'l'},
-   					{"no-dereference", no_argument, NULL, 'P'},
+   					{"no-deference", no_argument, NULL, 'P'},
 					{"no-clobber",no_argument,NULL,'n'},
   					{"no-preserve", required_argument, NULL, NO_PRESERVE_ATTRIBUTES_OPTION},
   					{"one-file-system", no_argument, NULL, 'x'},
@@ -228,9 +230,29 @@ int main( int argc, char *argv[] )
 				break;
 			case ATTRIBUTES_ONLY_OPTION:
 				ga.need_attr_only = true;
+				ga.preserve_mode = true;
+				ga.preserve_ownership = true;
+				ga.preserve_timestamps = true;
+				ga.preserve_links = true;
+				ga.need_preserve =true;
 				break;
 			case 'b':
-				ga.need_backup = decode_backup_arg(optarg);		
+				ga.need_backup = decode_backup_arg(optarg);
+				break;
+			case 'd':
+				ga.need_no_deference = true;
+				ga.need_preserve = true;
+				ga.preserve_links = true;
+				break;
+			case COPY_CONTENTS_OPTION:
+				ga.need_copy_contents = true;
+				break;
+			case 'f':
+				ga.need_force = true;
+				break;
+			case 'L':
+				ga.need_deference = true;
+				break;
 			case 'r':
 			case 'R':
 				ga.need_recursive = 1;    
@@ -241,19 +263,20 @@ int main( int argc, char *argv[] )
 			case 'p':
           			if (optarg == NULL)
 				{
-				      /* 与下面的p选项处理相同  */
+				      // 与下面的p选项处理相同
 				}else {
 				        decode_preserve_arg (optarg);
 				        ga.need_preserve = true;
 				        break;
 				}
-			case NO_PRESERVE_ATTRIBUTES_OPTION:
-				ga.preserve_mode = true;
-				ga.preserve_ownership = true;
-				ga.preserve_timestamps = true;
-				break;
 		       	case 'P':
-				ga.need_no_derence = true;                         //只对symbolic有用
+				ga.need_no_deference = true;                         //只对symbolic有用
+				break;
+			case NO_PRESERVE_ATTRIBUTES_OPTION:
+				ga.need_no_preserve = true;
+				if(optarg == NULL)
+				{
+				}
 				break;
 			case 'i':
 				ga.need_interactive = true;

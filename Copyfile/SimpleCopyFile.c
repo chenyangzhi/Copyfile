@@ -59,7 +59,7 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 	}else if(ENUM_SYMLINK == it)
 	{
 		input = realpath(input_file_path,lf);
-		if(input != NULL)                                        //此软链接已经断掉了
+		if(input != NULL && ga.need_no_deference == false)                                        //此软链接已经断掉了
 		{		
 			if(type_of_file(input) == ENUM_DIR)
 			{
@@ -77,8 +77,12 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
 	}
 	filehand_src = open_file(input_file_path,O_RDONLY);
-	
-        excute_copy(filehand_src,filehand_dst);					//一切准备就绪，执行拷贝		
+
+	if( ga.need_attr_only == false)
+	{
+		excute_copy(filehand_src,filehand_dst);					//一切准备就绪，执行拷贝		
+	}
+        
         return true;
 }
 

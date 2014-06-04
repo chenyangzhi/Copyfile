@@ -34,14 +34,15 @@ typedef enum backup_arg {
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
-        int need_no_derence;                    /*-d option*/
+	int need_copy_contents;
+	int need_no_clobber;                    /*-n option*/
      	int need_force;                         /*-f option*/
   	int need_interactive;                   /*-i option*/
       	int need_link;                          /*-l option*/
- 	int need_dereference;                   /*-L option*/
-	int need_no_clobber;                    /*-n option*/
-	int need_no_deference;                /*-P option*/
+ 	int need_deference;                     /*-L option*/
+	int need_no_deference;                  /*-P option*/
         int need_preserve;                      /*-p option*/
+	int need_no_preserve;
 	int preserve_ownership;
  	int preserve_mode;
   	int preserve_timestamps;

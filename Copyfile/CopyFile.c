@@ -103,7 +103,7 @@ char* absolute_path(const char* relapath,char real_name[])
 	parent_name = dirname(dir_name);
 	if(realpath(parent_name,real_name) == NULL)
 		printf("no this document:%s",dir_name);
-	if(*real_name != '/')
+	if(strcmp(real_name,"/") != 0)
 		real_name = strcat(real_name,"/");
 	return strcat(real_name,file_base_name);
 	

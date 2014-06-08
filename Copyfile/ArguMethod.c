@@ -77,32 +77,57 @@ file type_of_file(const char* input_file_path)             //判断文件的类�
         }
 }
 
-void backup_method(const char* output_file_path)
+bool backup_method(const char* output_file_path)
 {
 	char new_name[MAX_PATH_LENGTH];
+	char file_dir[MAX_PATH_LENGTH];
+	char* file_name;
+	int len = strlen(output_file_path);
+	int i;
+	sprintf(file_dir,"%s",output_file_path);
+	for(i = len; i >= 0; i--)
+	{
+		if(file_dir[i] == '\')
+		{
+			file_dir[i] = 0;
+		}
+	}
 	strcpy(new_name,output_file_path);
 	strcat(new_name,"~");
-	switch(ga.backup_type){
-		case BACKUP_OFF:
-			break;
-		case BACKUP_T:
-		
-			break;
-		case BACKUP_NIL:
-			
-			break;
-		case BACKUP_NEVER:
-			
-			break;
-		case NO_ARG:
-			
-			break;
-	}
-	
-	if(true == access_file(output_file_path,F_OK) && true == access_file(new_name,F_OK))
-	{			
-		rename_file(output_file_path, new_name);
-	}
+	struct dirent* dirent_next = NULL;
+	DIR* to_readDir = NULL;
+	if(true == access_file(output_file_path,F_OK)
+	{
+		switch(ga.backup_type){
+			case BACKUP_OFF:
+				return false;
+			case BACKUP_T:
+				int i = 1;
+				to_readDir = opendir(input_directory);		
+				while(0 !=  (dirent_next = readdir(to_readDir)))
+				{
+					strcmp(
+				}
+				sprintf(new_name,"%s~%d~",output_file_path,i);
+				while(access_file(new_name,F_OK)
+				{
+					i++;
+				}
+				rename_file(output_file_path, new_name);
+				return true;
+			case BACKUP_NIL:
+				
+				if
+				;
+			case BACKUP_NEVER:
+			case NO_ARG:
+				if(true == access_file(new_name,F_OK))
+				{			
+					rename_file(output_file_path, new_name);
+				}
+				break;
+		}
+	}	
 }
 
 int interactivity_method(const char* output_file_path)    //交互方法
@@ -224,8 +249,6 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 			mkdir(cur_outputfile_path,0775);
 			recursive_method(cur_inputfile_path,cur_outputfile_path);	
 		}else{
-			if(strcmp(cur_outputfile_path,"/tmp/etc/blkid.tab") == 0)
-				printf("cur_inputfile_path %s\n",cur_inputfile_path);
 			argu_parse_copy(cur_inputfile_path,cur_outputfile_path);		
 		}
 	}

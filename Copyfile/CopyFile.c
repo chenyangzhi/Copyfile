@@ -145,3 +145,25 @@ void rename_file(const char *oldpath, const char *newpath)
 	}
 }
 
+bool exist_num_backup(const char *file1, const char* file2)
+{
+	while(*file1 == *file2 && *file1 != 0 && *file2 != 0)
+	{
+		file1++;
+		file2++;
+	}
+	if(*file1 == 0 *file2 != 0)
+	{
+		int i = 0;
+		if(*file2++ == '.' && *file2++ == '~' && *file2+ == '~'
+		for( ; i < strlen(file2)-strlen(file1)-3; i++,file2++)
+		{
+			if(*file2 >'0' && *file2 < '9')
+				continue;
+			else
+				return false;
+		}
+
+	}
+}
+

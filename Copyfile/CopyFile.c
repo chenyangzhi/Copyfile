@@ -126,4 +126,22 @@ void file_status(const char* path,struct stat* st)
 	}
 }
 
+bool access_file(const char* path, int mode)
+{
+	if(0 != access(path,mode))
+	{
+		fprintf(stderr,"path is %s ",path);
+		error_message("access error");	
+	}
+	return true;
+}
+
+void rename_file(const char *oldpath, const char *newpath)
+{
+	if(0 != rename(oldpath,newpath))
+	{
+		fprintf(stderr,"path is %s ",oldpath);
+		error_message("rename error");
+	}
+}
 

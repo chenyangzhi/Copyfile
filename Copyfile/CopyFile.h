@@ -29,11 +29,13 @@ typedef enum backup_arg {
 	BACKUP_OFF,
 	BACKUP_T,
 	BACKUP_NIL,
-	BACKUP_NEVER
+	BACKUP_NEVER,
+	NO_ARG
 }backup_arg;
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
+	int need_backup;
 	int need_copy_contents;
 	int need_no_clobber;                    /*-n option*/
      	int need_force;                         /*-f option*/
@@ -52,7 +54,7 @@ typedef struct globalArgs {
 	int num_of_files;
 	char* input_file;
         char* output_file;
-	backup_arg need_backup;                  /*-b option*/                
+	backup_arg backup_type;                  /*-b option*/                
                 
 } globalArgs;
 

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <utime.h>
+#include <string.h>
 
 #define BUFFSIZE  131072
 extern globalArgs ga;
@@ -31,7 +32,11 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 	char lf[MAX_PATH_LENGTH];
 	struct stat info;
 	
-	file_status(input_file_path, &info); 					//提取文件的状态信息
+	file_status(input_file_path, &info); 
+	if(ga.need_backup == true)
+	{
+		backup_method(output_file_path);	
+	}					//提取文件的状态信息
 	if(ga.need_interactive)        
 	{									//判断交互标志
 		if(interactivity_method(output_file_path) == NOT_OVERWRITE)     //

@@ -77,6 +77,34 @@ file type_of_file(const char* input_file_path)             //判断文件的类�
         }
 }
 
+void backup_method(const char* output_file_path)
+{
+	char new_name[MAX_PATH_LENGTH];
+	strcpy(new_name,output_file_path);
+	strcat(new_name,"~");
+	switch(ga.backup_type){
+		case BACKUP_OFF:
+			break;
+		case BACKUP_T:
+		
+			break;
+		case BACKUP_NIL:
+			
+			break;
+		case BACKUP_NEVER:
+			
+			break;
+		case NO_ARG:
+			
+			break;
+	}
+	
+	if(true == access_file(output_file_path,F_OK) && true == access_file(new_name,F_OK))
+	{			
+		rename_file(output_file_path, new_name);
+	}
+}
+
 int interactivity_method(const char* output_file_path)    //交互方法
 {
 	if(0 == access(output_file_path,F_OK))

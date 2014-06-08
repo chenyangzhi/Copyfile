@@ -51,10 +51,19 @@ static char const* const backup_args[] =
 //
 static backup_arg decode_backup_arg(char const *optarg)
 {
-	backup_arg a;
+	backup_arg arg_val;
 	char *optarg_writable = strdup (optarg);
 	char *s = optarg_writable;
-	return a;
+	backup_arg const backup_vals[] = 
+	{
+		BACKUP_OFF,
+		BACKUP_T,
+		BACKUP_NIL,
+		BACKUP_NEVER
+	};
+	arg_val = ARG_MATCH("--backup",s,backup_args,backup_vals);
+	
+	return arg_val;
 }
 static void decode_preserve_arg (char const *optarg)
 {
@@ -237,7 +246,9 @@ int main( int argc, char *argv[] )
 				ga.need_preserve =true;
 				break;
 			case 'b':
-				ga.need_backup = decode_backup_arg(optarg);
+				ga.need_backup = true; 
+				if(optarg != NULL)
+					ga.backup_type = decode_backup_arg(optarg);
 				break;
 			case 'd':
 				ga.need_no_deference = true;

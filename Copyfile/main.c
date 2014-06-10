@@ -46,7 +46,7 @@ static char const* const preserve_args[] =
 };
 static char const* const backup_args[] =
 {
-   "none","off", "simple", "never","existing", "nil","numbered", "t",0
+   "none", "t", "nil","simple",0
 };
 //
 static backup_arg decode_backup_arg(char const *optarg)
@@ -56,7 +56,7 @@ static backup_arg decode_backup_arg(char const *optarg)
 	char *s = optarg_writable;
 	backup_arg const backup_vals[] = 
 	{
-		BACKUP_OFF,
+		BACKUP_OFF ,
 		BACKUP_T,
 		BACKUP_NIL,
 		BACKUP_NEVER
@@ -249,6 +249,8 @@ int main( int argc, char *argv[] )
 				ga.need_backup = true; 
 				if(optarg != NULL)
 					ga.backup_type = decode_backup_arg(optarg);
+				else
+					ga.backup_type = NO_ARG;
 				break;
 			case 'd':
 				ga.need_no_deference = true;

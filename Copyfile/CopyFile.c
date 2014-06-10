@@ -145,25 +145,43 @@ void rename_file(const char *oldpath, const char *newpath)
 	}
 }
 
-bool exist_num_backup(const char *file1, const char* file2)
+bool strcmp_backup(const char* name1,char* name2,int *d)
 {
-	while(*file1 == *file2 && *file1 != 0 && *file2 != 0)
+	int i,k,j,l1,l2;
+	char t,*tempname2,tempname1[MAX_PATH_LENGTH],numsuffix[MAX_PATH_LENGTH];
+	
+	k = 0;
+	l1 =  strlen(name1);
+	tempname2 = basename(name2);
+	l2 = strlen(tempname2);
+	if(l1 <= l2+3)
+		return false;
+	strcpy(tempname1,name1);
+	if(name1[l1-1] != '~')
+		return false;
+	if(name1[l1-2] < '0' && name1[l1-2] > '9')
 	{
-		file1++;
-		file2++;
+		return false;
+	}else{
+		numsuffix[k] = name1[l1-2];
 	}
-	if(*file1 == 0 *file2 != 0)
+	for(k = 1,i = l1-3; i >= 0; i--,k++)
 	{
-		int i = 0;
-		if(*file2++ == '.' && *file2++ == '~' && *file2+ == '~'
-		for( ; i < strlen(file2)-strlen(file1)-3; i++,file2++)
+		if(name1[i] > '0' && name1[i] < '9')
 		{
-			if(*file2 >'0' && *file2 < '9')
-				continue;
-			else
-				return false;
-		}
-
+			numsuffix[k] = name1[i];
+			continue;
+		}else if(name1[i] == '~' && name1[i-1] == '.'){
+			tempname1[i-1] = 0;
+			if( strcmp(tempname1,tempname2) == 0)
+			{
+				numsuffix[k] = 0;
+				for(i=0,j=k-1;i<j;i++,j--) { t=numsuffix[i]; numsuffix[i]=numsuffix[j]; numsuffix[j]=t; }
+				*d = atoi(numsuffix);
+				return true;
+			}
+		}			
 	}
+	return false;
 }
 

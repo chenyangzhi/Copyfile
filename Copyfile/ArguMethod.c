@@ -9,6 +9,7 @@
 #include <time.h>
 #include <utime.h>
 #include <fcntl.h>
+#include <libgen.h>
 #include "CopyFile.h"
 #include "hash.h"                         //引入hash算法只是为了有--preserve=links 保持了 源内的链接性
 
@@ -81,51 +82,70 @@ bool backup_method(const char* output_file_path)
 {
 	char new_name[MAX_PATH_LENGTH];
 	char file_dir[MAX_PATH_LENGTH];
-	char* file_name;
+	char *file_name;
 	int len = strlen(output_file_path);
-	int i;
+	int i,d,flag;
+	struct dirent* dirent_next = NULL;
+	DIR* to_readDir = NULL;
 	sprintf(file_dir,"%s",output_file_path);
 	for(i = len; i >= 0; i--)
 	{
-		if(file_dir[i] == '\')
+		if(file_dir[i] == '/')
 		{
 			file_dir[i] = 0;
+			break;
 		}
 	}
 	strcpy(new_name,output_file_path);
-	strcat(new_name,"~");
-	struct dirent* dirent_next = NULL;
-	DIR* to_readDir = NULL;
-	if(true == access_file(output_file_path,F_OK)
+	if(0 == access(output_file_path,F_OK))
 	{
 		switch(ga.backup_type){
 			case BACKUP_OFF:
 				return false;
+			case BACKUP_NIL:
 			case BACKUP_T:
-				int i = 1;
-				to_readDir = opendir(input_directory);		
+				i = 0,flag = 0;
+				//char tmpname[MAX_PATH_LENGTH];
+				file_name = basename(new_name);
+				to_readDir = opendir(file_dir);		
 				while(0 !=  (dirent_next = readdir(to_readDir)))
 				{
-					strcmp(
+					if(strcmp_backup(dirent_next->d_name,new_name,&d))
+					{
+						if(d > flag)
+							flag = d;
+					}
 				}
-				sprintf(new_name,"%s~%d~",output_file_path,i);
-				while(access_file(new_name,F_OK)
+				if(ga.backup_type == BACKUP_NIL && flag != 0)
 				{
-					i++;
+					sprintf(new_name,"%s.~%d~",output_file_path,flag+1);
+					rename_file(output_file_path, new_name);
+					return true;
+				}else{
+					sprintf(new_name,"%s.~%d~",output_file_path,flag+1);
+					rename_file(output_file_path, new_name);
+					return true;
 				}
-				rename_file(output_file_path, new_name);
-				return true;
-			case BACKUP_NIL:
-				
-				if
-				;
 			case BACKUP_NEVER:
 			case NO_ARG:
-				if(true == access_file(new_name,F_OK))
-				{			
-					rename_file(output_file_path, new_name);
+				
+				if(0 == access(new_name,F_OK))
+				{	
+					sprintf(new_name,"%s~",output_file_path);
+					if(0 != access(new_name,F_OK))
+					{
+						rename_file(output_file_path, new_name);
+						return true;
+					}
+					sprintf(new_name,"%s~~",output_file_path);
+					if(0 != access(new_name,F_OK))
+					{				
+						rename_file(output_file_path, new_name);
+						return true;
+					}
+					return false;
+					
 				}
-				break;
 		}
 	}	
 }

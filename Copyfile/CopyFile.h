@@ -26,7 +26,7 @@ typedef enum file{
   ENUM_SOCKET
 }file;
 typedef enum backup_arg {
-	BACKUP_OFF,
+	BACKUP_OFF = 0,
 	BACKUP_T,
 	BACKUP_NIL,
 	BACKUP_NEVER,

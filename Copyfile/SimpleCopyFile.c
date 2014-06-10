@@ -35,7 +35,8 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 	file_status(input_file_path, &info); 
 	if(ga.need_backup == true)
 	{
-		backup_method(output_file_path);	
+		if(backup_method(output_file_path) == false)
+			return true;	
 	}					//提取文件的状态信息
 	if(ga.need_interactive)        
 	{									//判断交互标志

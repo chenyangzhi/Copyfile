@@ -45,6 +45,7 @@ typedef struct globalArgs {
 	int need_no_deference;                  /*-P option*/
         int need_preserve;                      /*-p option*/
 	int need_no_preserve;
+	int need_suffix;
 	int preserve_ownership;
  	int preserve_mode;
   	int preserve_timestamps;
@@ -54,6 +55,7 @@ typedef struct globalArgs {
 	int num_of_files;
 	char* input_file;
         char* output_file;
+	char* suffix;
 	backup_arg backup_type;                  /*-b option*/                
                 
 } globalArgs;

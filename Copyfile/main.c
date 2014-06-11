@@ -273,6 +273,15 @@ int main( int argc, char *argv[] )
 			case 's':
 				ga.need_symbolic_link = 1;
 				break;
+			case 'S':
+				ga.need_suffix = true;
+				if(optarg != NULL)
+				{
+					ga.suffix = strdup(optarg);
+				}else{
+					fprintf(stderr,"%s","the suffix argument must required argument");
+				}
+				break;
 			case 'p':
           			if (optarg == NULL)
 				{

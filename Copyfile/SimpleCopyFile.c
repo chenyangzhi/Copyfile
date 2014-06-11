@@ -37,6 +37,14 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 	{
 		if(backup_method(output_file_path) == false)
 			return true;	
+	}else if(ga.need_suffix == true){
+		if(0 == access(output_file_path,F_OK))
+		{
+			char temp[MAX_PATH_LENGTH];
+			sprintf(temp,"%s",output_file_path);
+			strcat(temp,ga.suffix);
+			rename(output_file_path,temp);
+		}
 	}					//提取文件的状态信息
 	if(ga.need_interactive)        
 	{									//判断交互标志

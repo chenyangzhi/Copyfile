@@ -56,6 +56,7 @@ typedef struct globalArgs {
 	char* input_file;
         char* output_file;
 	char* suffix;
+	char* parent_dir;
 	backup_arg backup_type;                  /*-b option*/                
                 
 } globalArgs;

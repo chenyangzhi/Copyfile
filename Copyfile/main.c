@@ -46,7 +46,11 @@ static char const* const preserve_args[] =
 };
 static char const* const backup_args[] =
 {
-   "none", "t", "nil","simple",0
+   "none", "auto", 0
+};
+static char const* const backup_args[] =
+{
+   "always", "", "nil","simple",0
 };
 //
 static backup_arg decode_backup_arg(char const *optarg)
@@ -215,6 +219,7 @@ int main( int argc, char *argv[] )
   					{"remove-destination", no_argument, NULL, UNLINK_DEST_BEFORE_OPENING},
   					{"reply", required_argument, NULL, REPLY_OPTION},
   					{"sparse", required_argument, NULL, SPARSE_OPTION},
+					{"reflink", optional_argument, NULL, REFLINK_OPTION},
   					{"strip-trailing-slashes", no_argument, NULL, STRIP_TRAILING_SLASHES_OPTION},
   					{"suffix", required_argument, NULL, 'S'},
   					{"symbolic-link", no_argument, NULL, 's'},
@@ -294,6 +299,9 @@ int main( int argc, char *argv[] )
 		       	case 'P':
 				ga.need_no_deference = true;                         //只对symbolic有用
 				break;
+			case PARENTS_OPTION:
+				ga.need_parents = true;
+				break;
 			case NO_PRESERVE_ATTRIBUTES_OPTION:
 				ga.need_no_preserve = true;
 				if(optarg == NULL)
@@ -321,6 +329,7 @@ int main( int argc, char *argv[] )
 	
 	for(i = optind; i < argc-1 ; i++)
 	{
+		if
 		it = type_of_file(argv[i]);                            //判断文件可不可达
 		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
 		if(str_cmp(ga.input_file,ga.output_file,ot) == false)

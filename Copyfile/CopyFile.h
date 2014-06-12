@@ -32,6 +32,10 @@ typedef enum backup_arg {
 	BACKUP_NEVER,
 	NO_ARG
 }backup_arg;
+typedef enum reflink_arg{
+	ALWAYS,
+	AUTO
+}reflink_arg;
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
@@ -44,6 +48,7 @@ typedef struct globalArgs {
  	int need_deference;                     /*-L option*/
 	int need_no_deference;                  /*-P option*/
         int need_preserve;                      /*-p option*/
+	int need_parents;
 	int need_no_preserve;
 	int need_suffix;
 	int preserve_ownership;

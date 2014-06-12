@@ -25,7 +25,8 @@ enum
   SPARSE_OPTION,
   STRIP_TRAILING_SLASHES_OPTION,
   TARGET_DIRECTORY_OPTION,
-  UNLINK_DEST_BEFORE_OPENING
+  UNLINK_DEST_BEFORE_OPENING,
+  REFLINK_OPTION
 };
 enum File_attribute
 {
@@ -38,21 +39,34 @@ enum File_attribute
 globalArgs ga;
 file ot = -1;
 file it = -1;
+extern int overwrite;
 static const char* optString = "abdfHilLprstuvxPRS:TV:";
 
 static char const* const preserve_args[] =
 {
    "mode", "timestamps", "ownership", "links", "all", 0
 };
-static char const* const backup_args[] =
+static char const* const reflink_args[] =
 {
    "none", "auto", 0
 };
 static char const* const backup_args[] =
 {
-   "always", "", "nil","simple",0
+   "always", "t", "nil","simple",0
 };
 //
+static reflink_arg decode_relink_arg(char const* optarg)
+{
+	reflink_arg arg_val;
+	char* optarg_writable = strdup(optarg);
+	char *s = optarg_writable;
+	reflink_arg const reflink_vals[] = 
+	{
+		ALWAYS,
+		AUTO,
+	};
+	arg_val = ARG_MATCH("--reflink",s,reflink_args,reflink_vals);
+}
 static backup_arg decode_backup_arg(char const *optarg)
 {
 	backup_arg arg_val;
@@ -267,6 +281,7 @@ int main( int argc, char *argv[] )
 				break;
 			case 'f':
 				ga.need_force = true;
+				overwrite = 0;
 				break;
 			case 'L':
 				ga.need_deference = true;
@@ -308,6 +323,9 @@ int main( int argc, char *argv[] )
 				{
 				}
 				break;
+			case REFLINK_OPTION:
+				ga.need_reflink = true;
+				break;
 			case 'i':
 				ga.need_interactive = true;
 				ga.need_no_clobber = false;
@@ -329,8 +347,17 @@ int main( int argc, char *argv[] )
 	
 	for(i = optind; i < argc-1 ; i++)
 	{
-		if
 		it = type_of_file(argv[i]);                            //判断文件可不可达
+		if(ga.need_parents = true)
+		{
+			if(argv[i][0] != '/')
+			{
+				strcat(ga.output_file,"/");
+				strcat(ga.output_file,ga.parent_dir);
+			}else{
+				strcat(ga.output_file,ga.parent_dir);
+			}
+		}
 		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
 		if(str_cmp(ga.input_file,ga.output_file,ot) == false)
 		{

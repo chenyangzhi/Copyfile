@@ -126,6 +126,8 @@ void file_status(const char* path,struct stat* st)
 	}
 }
 
+
+
 bool access_file(const char* path, int mode)
 {
 	if(0 != access(path,mode))
@@ -184,4 +186,5 @@ bool strcmp_backup(const char* name1,char* name2,int *d)
 	}
 	return false;
 }
+
 

@@ -27,7 +27,7 @@ static void excute_copy(int src, int dst)
 int argu_parse_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
 {
 	
-	int filehand_src,filehand_dst;
+	int filehand_src,filehand_dst = -1;
 	char* input;	
 	char lf[MAX_PATH_LENGTH];
 	struct stat info;
@@ -52,6 +52,12 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 		{
 			return  true;
 		}
+	}else if(ga.need_force == true){
+		if( filehand_dst = open(output_file_path,O_WRONLY|O_CREAT|O_EXCL) )
+		{
+			remove(output_file_path);
+			
+		}		
 	}
 	if( true == ga.need_symbolic_link )
 	{
@@ -87,7 +93,7 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 			return true;		
 		}
 		
-	}else{
+	}else if(filehand_dst == -1){
 		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
 	}
 	filehand_src = open_file(input_file_path,O_RDONLY);

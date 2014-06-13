@@ -51,6 +51,7 @@ typedef struct globalArgs {
 	int need_parents;
 	int need_no_preserve;
 	int need_suffix;
+	int need_reflink;
 	int preserve_ownership;
  	int preserve_mode;
   	int preserve_timestamps;

@@ -187,4 +187,30 @@ bool strcmp_backup(const char* name1,char* name2,int *d)
 	return false;
 }
 
+void make_parent_dir(char* path1,char* path2,mode_t mode)
+{
+	int   i,len1,len2;
+	char  seps[]   = "/";
+	char  *token_cur,*token_next;
 
+	if(path2 == NULL)
+	{
+		error_message("the parent path isn't exist");
+	}
+	token_cur = strtok(path2,seps);
+	while( (token_next = strtok(NULL,seps)) != NULL )
+	{
+		strcat(path1,token_cur);
+		strcat(path1,"/");
+		if(access(path1,F_OK) != 0)
+		{
+			if(mkdir(path1,mode) == -1)
+			{
+				perror("mkdir error");
+				exit(0);
+			}
+		}
+		token_cur = token_next;
+	}
+	
+}

@@ -209,7 +209,7 @@ void argu_action_excute()    //
 
 int main( int argc, char *argv[] )
 {
-	int i,opt = 0;
+	int i,ol,opt = 0;
 	char real_inputfile_path[MAX_PATH_LENGTH];
 	char real_outputfile_path[MAX_PATH_LENGTH];
 	//char outputfile_dir[MAX_PATH_LENGTH];
@@ -344,19 +344,16 @@ int main( int argc, char *argv[] )
 	ga.num_of_files = argc - optind;
 	sprintf(real_outputfile_path,"%s",argv[argc-1]);
 	out_file_parse(argv[argc-1],real_outputfile_path);
-	
+	ol = strlen(ga.output_file);
 	for(i = optind; i < argc-1 ; i++)
 	{
 		it = type_of_file(argv[i]);                            //判断文件可不可达
 		if(ga.need_parents = true)
 		{
-			if(argv[i][0] != '/')
-			{
-				strcat(ga.output_file,"/");
-				strcat(ga.output_file,ga.parent_dir);
-			}else{
-				strcat(ga.output_file,ga.parent_dir);
-			}
+			char p[MAX_PATH_LENGTH];
+			sprintf(p,"%s",argv[i]);
+			ga.output_file[ol] = '\0';
+			make_parent_dir(ga.output_file,p,0775);
 		}
 		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
 		if(str_cmp(ga.input_file,ga.output_file,ot) == false)

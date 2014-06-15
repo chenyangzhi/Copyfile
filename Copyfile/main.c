@@ -66,9 +66,9 @@ static sparse_arg decode_sparse_arg(char const* optarg)
 	char *s = optarg_writable;
 	sparse_arg const sparse_vals[] = 
 	{
-		AUTO,
-		ALWAYS,
-		NEVER
+		SPARSE_AUTO,
+		SPARSE_ALWAYS,
+		SPARSE_NEVER
 	};
 	arg_val = ARG_MATCH("--reflink",s,sparse_args,sparse_vals);
 }
@@ -342,7 +342,7 @@ int main( int argc, char *argv[] )
 				break;
 			case SPARSE_OPTION:
 				ga.need_sparse = true;
-				ga.sparse_when = decode_sparse_arg(optarg);
+				ga.sparse_mode = decode_sparse_arg(optarg);
 			case REFLINK_OPTION:
 				ga.need_reflink = true;
 				break;

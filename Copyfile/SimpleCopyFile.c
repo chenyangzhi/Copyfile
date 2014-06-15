@@ -14,22 +14,21 @@ extern globalArgs ga;
 extern file it;
 int overwrite = O_EXCL;
 
-static void excute_copy(int src, int dst,struct stat const *src_info,)
+static void excute_copy(int src, int dst,struct stat const *src_info)
 {
 	int n_read;
 	char buf[BUFFSIZE];
-	struct stat sb;
-  	struct stat src_open_sb;
-  	char *cp;
-  	int *ip;
+  	char *cp = 0;
+  	int *ip ;
   	int n_read_total = 0;
   	int hole_last_write = 0;
-  	int make_holes = (x->sparse_mode == SPARSE_ALWAYS);
+	int buf_size = BUFFSIZE;
+  	int make_holes = (ga.sparse_mode == SPARSE_ALWAYS);
 
 
-  	if (x->sparse_mode == SPARSE_AUTO)
+  	if (ga.sparse_mode == SPARSE_AUTO)
   	{
-      		if (S_ISREG (sb.st_mode) && sb.st_size / ST_NBLOCKSIZE > ST_NBLOCKS (sb))
+      		if (S_ISREG (src_info->st_mode) && src_info->st_size / ST_NBLOCKSIZE >  src_info->st_blocks)
 			make_holes = 1;
     	}
 	while(1)
@@ -37,7 +36,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info,)
 		n_read = read (src, buf, buf_size);
       		if (n_read < 0)
 		{
-	 		error_message("read file erro");
+	 		error_message("read file error");
 	 	}
 	
       		if (n_read == 0)
@@ -54,34 +53,34 @@ static void excute_copy(int src, int dst,struct stat const *src_info,)
 	    			;
 
 	  		cp = (char *) (ip - 1);
-	 		 while (*cp++ == 0)
+	 		while (*cp++ == 0)
 	   			 ;
 
 	  		if (cp > buf + n_read)
 	    		{
-	      			if (lseek (dest_desc, n_read, SEEK_CUR) < 0L)
+	      			if (lseek (dst, n_read, SEEK_CUR) < 0L)
 				{
 		 			error_message("lseek error");
 				}
-	      			last_write_made_hole = 1;
+	      			hole_last_write = 1;
 			}else
 	    			ip = 0;
 		}
       		if (ip == 0)
 		{
 	  		int n = n_read;
-	  		if (full_write (dest_desc, buf, n) != n)
+	  		if (write (dst, buf, n) != n)
 	    		{
 	    			error_message("write error");
 			}
-	  		last_write_made_hole = 0;
+	  		hole_last_write = 0;
 		}
     	}
 
-  	if (last_write_made_hole)
+  	if (hole_last_write)
     	{
-      		if (full_write (dest_desc, "", 1) != 1 || ftruncate (dest_desc, n_read_total) < 0)
-      			if (lseek (dest_desc, (off_t) -1, SEEK_CUR) < 0L || write_file (dest_desc, "", 1) != 1)
+      		if (write(dst, "", 1) != 1 || ftruncate (dst, n_read_total) < 0)
+      			if (lseek (dst, (off_t) -1, SEEK_CUR) < 0L || write (dst, "", 1) != 1)
 			{
 	  			error_message("last_write_made_hole");
 			}
@@ -166,7 +165,7 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 
 	if( ga.need_attr_only == false)
 	{
-		excute_copy(filehand_src,filehand_dst);					//一切准备就绪，执行拷贝		
+		excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
 	}
         
         return true;

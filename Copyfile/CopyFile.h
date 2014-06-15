@@ -14,6 +14,7 @@
 #define OVERWRITE 0
 #define FILE_NOT_EXIST -1
 #define OVERWRITE_DST 00000000
+#define ST_NBLOCKSIZE 512
 
 typedef enum file{
   UNKNOWN = -1,
@@ -37,10 +38,10 @@ typedef enum reflink_arg{
 	AUTO
 }reflink_arg;
 typedef enum sparse_arg {
-	AUTO,
-	ALWAYS,
-	NEVER
-};
+	SPARSE_AUTO,
+	SPARSE_ALWAYS,
+	SPARSE_NEVER
+}sparse_arg;
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
@@ -62,7 +63,9 @@ typedef struct globalArgs {
   	int preserve_timestamps;
 	int preserve_links;
         int need_recursive;                     
-        int need_symbolic_link;                 
+        int need_symbolic_link;
+	int need_sparse;
+	sparse_arg sparse_mode;                 
 	int num_of_files;
 	char* input_file;
         char* output_file;

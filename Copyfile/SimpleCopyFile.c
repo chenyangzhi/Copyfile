@@ -14,12 +14,78 @@ extern globalArgs ga;
 extern file it;
 int overwrite = O_EXCL;
 
-static void excute_copy(int src, int dst)
+static void excute_copy(int src, int dst,struct stat const *src_info,)
 {
-	int n;
+	int n_read;
 	char buf[BUFFSIZE];
-	while((n = read_file(src,buf,BUFFSIZE)) > 0)
-		write_file(dst,buf,n);
+	struct stat sb;
+  	struct stat src_open_sb;
+  	char *cp;
+  	int *ip;
+  	int n_read_total = 0;
+  	int hole_last_write = 0;
+  	int make_holes = (x->sparse_mode == SPARSE_ALWAYS);
+
+
+  	if (x->sparse_mode == SPARSE_AUTO)
+  	{
+      		if (S_ISREG (sb.st_mode) && sb.st_size / ST_NBLOCKSIZE > ST_NBLOCKS (sb))
+			make_holes = 1;
+    	}
+	while(1)
+	{	
+		n_read = read (src, buf, buf_size);
+      		if (n_read < 0)
+		{
+	 		error_message("read file erro");
+	 	}
+	
+      		if (n_read == 0)
+			break;
+
+      		n_read_total += n_read;
+
+      		ip = 0;
+      		if (make_holes)
+		{
+	 		buf[n_read] = 1;
+	  		ip = (int *) buf;
+	  		while (*ip++ == 0)
+	    			;
+
+	  		cp = (char *) (ip - 1);
+	 		 while (*cp++ == 0)
+	   			 ;
+
+	  		if (cp > buf + n_read)
+	    		{
+	      			if (lseek (dest_desc, n_read, SEEK_CUR) < 0L)
+				{
+		 			error_message("lseek error");
+				}
+	      			last_write_made_hole = 1;
+			}else
+	    			ip = 0;
+		}
+      		if (ip == 0)
+		{
+	  		int n = n_read;
+	  		if (full_write (dest_desc, buf, n) != n)
+	    		{
+	    			error_message("write error");
+			}
+	  		last_write_made_hole = 0;
+		}
+    	}
+
+  	if (last_write_made_hole)
+    	{
+      		if (full_write (dest_desc, "", 1) != 1 || ftruncate (dest_desc, n_read_total) < 0)
+      			if (lseek (dest_desc, (off_t) -1, SEEK_CUR) < 0L || write_file (dest_desc, "", 1) != 1)
+			{
+	  			error_message("last_write_made_hole");
+			}
+    	}
 	close(src);
 	close(dst);
 }

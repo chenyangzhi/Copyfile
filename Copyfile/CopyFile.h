@@ -36,6 +36,11 @@ typedef enum reflink_arg{
 	ALWAYS,
 	AUTO
 }reflink_arg;
+typedef enum sparse_arg {
+	AUTO,
+	ALWAYS,
+	NEVER
+};
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;

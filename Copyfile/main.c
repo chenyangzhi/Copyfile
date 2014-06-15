@@ -54,7 +54,24 @@ static char const* const backup_args[] =
 {
    "always", "t", "nil","simple",0
 };
+static char const* const sparse_args[] =
+{
+   "auto", "always", "never",0
+};
 //
+static sparse_arg decode_sparse_arg(char const* optarg)
+{
+	sparse_arg arg_val;
+	char* optarg_writable = strdup(optarg);
+	char *s = optarg_writable;
+	sparse_arg const sparse_vals[] = 
+	{
+		AUTO,
+		ALWAYS,
+		NEVER
+	};
+	arg_val = ARG_MATCH("--reflink",s,sparse_args,sparse_vals);
+}
 static reflink_arg decode_relink_arg(char const* optarg)
 {
 	reflink_arg arg_val;
@@ -323,6 +340,9 @@ int main( int argc, char *argv[] )
 				{
 				}
 				break;
+			case SPARSE_OPTION:
+				ga.need_sparse = true;
+				ga.sparse_when = decode_sparse_arg(optarg);
 			case REFLINK_OPTION:
 				ga.need_reflink = true;
 				break;

@@ -285,7 +285,7 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 			mkdir(cur_outputfile_path,0775);
 			recursive_method(cur_inputfile_path,cur_outputfile_path);	
 		}else{
-			argu_parse_copy(cur_inputfile_path,cur_outputfile_path);		
+			prepare_copy(cur_inputfile_path,cur_outputfile_path);		
 		}
 	}
         closedir(to_readDir);

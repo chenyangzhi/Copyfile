@@ -67,9 +67,7 @@ typedef struct globalArgs {
 	int need_sparse;
 	int need_one_filesystem;
 	sparse_arg sparse_mode;                 
-	int num_of_files;
-	char* input_file;
-        char* output_file;
+	int num_src_files;
 	char* suffix;
 	char* parent_dir;
 	backup_arg backup_type;                  /*-b option*/                

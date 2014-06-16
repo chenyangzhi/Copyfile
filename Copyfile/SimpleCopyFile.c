@@ -81,7 +81,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
 	return;
 }
 
-int argu_parse_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
+int prepare_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
 {
 	
 	int filehand_src,filehand_dst = -1;
@@ -118,7 +118,7 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 	}
 	if( true == ga.need_symbolic_link )
 	{
-		symbol_link(ga.input_file, output_file_path);
+		symbol_link(input_file_path, output_file_path);
 		return true;
 	}
 	if(ga.need_preserve == true)

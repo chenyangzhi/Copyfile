@@ -159,67 +159,86 @@ void display_usage( void )
        cp [OPTION]... -t DIRECTORY SOURCE..." );
 	exit( EXIT_FAILURE );
 }
-
-void out_file_parse(const char* pathname,char real_name[])
+bool is_directory(const char* pathname)
+{
+	return pathname[strlen(pathname) - 1] == '/'? 1:0;
+}
+char* target_file_parse(const char* pathname,char dst_name[])
 {
 	if(0 == access(pathname,F_OK))
 	{
 		ot = type_of_file(pathname);
 		if(ENUM_DIR != ot)                        //判断输出文件的类型
 		{
-			if(ga.num_of_files > 2)
+			if(ga.num_src_files > 1)
 			{
 				display_usage();
 				printf("too many files for output file,the output must be a directory");
+				return false;
 			}
-			ga.output_file = realpath(pathname,real_name);
+			return realpath(pathname,dst_name);
 		}else{
 	
-			if((ga.output_file = realpath(pathname,real_name)) == NULL)
+			if((realpath(pathname,dst_name)) == NULL)
 			{
-				error_message("realpath error");
+				printf("realpath error\n");
+				return false;
 			}else{						
-				strcat(ga.output_file,"/");             //如果输出的文件是目录，则在目录路径名后面加上“/”
+				strcat(dst_name,"/");             //如果输出的文件是目录，则在目录路径名后面加上“/”
+				return dst_name;
 			}
 		}
-	}else{		
-		ga.output_file = absolute_path(pathname,real_name);
+	}else{	
+		if( ga.num_src_files > 1)
+		{
+			printf("can't creat directory %s\n",pathname);
+			return false;
+		}else{				
+			absolute_path(pathname,dst_name);
+			if(ga.need_recursive)
+			{
+				mkdir(dst_name,0775);
+				ot = ENUM_DIR;
+				return strcat(dst_name,"/");
+			}else{
+				printf("the target %s is directory",dst_name);
+				return false;
+			}
+		}
 	}
 }
 
-void argu_action_excute()    //
+void prepare_target_file(const char* src_file, const char* target_file)    //dst_path is the last pathname for copying  
 {
-	int i;
-	char temp_outpath[MAX_PATH_LENGTH];
-	char temp_inpath[MAX_PATH_LENGTH];
+	char dst_path[MAX_PATH_LENGTH];
+	char src_path[MAX_PATH_LENGTH];
 	struct stat info;
-	sprintf(temp_outpath,"%s",ga.output_file);
-	sprintf(temp_inpath,"%s",ga.input_file);
+	sprintf(dst_path,"%s",target_file);
+	sprintf(src_path,"%s",src_file);
 	switch(ot)
 	{
 	
 		case ENUM_DIR:			
 			if(it == ENUM_DIR)
 			{
-				if(is_parent_dir(ga.input_file,temp_outpath))
+				if(is_parent_dir(src_path,dst_path))
 					printf("can't copy the parent directory");
-				
-				strcat(temp_outpath,basename(temp_inpath));
-				if(1 == ga.need_recursive)		
+				strcat(dst_path,basename(src_path));
+				if(true == ga.need_recursive)		
 				{	
-					strcat(temp_outpath,"/");
-					strcat(temp_inpath,"/");
-					mkdir(temp_outpath,0775);
-					recursive_method(temp_inpath,temp_outpath);
+					strcat(dst_path,"/");
+					strcat(src_path,"/");
+					mkdir(dst_path,0775);
+					recursive_method(src_path,dst_path); //both src_path and dst_path are a directory,end with '/'
 				}else
 					printf("omitting the directory\n");
 			}else{
-				strcat(temp_outpath,basename(ga.input_file));
-				argu_parse_copy(ga.input_file, temp_outpath);
+				strcat(dst_path,basename(src_path));
+				prepare_copy(src_path, dst_path);
 			}
 			break;
 		default:
-			argu_parse_copy(ga.input_file, temp_outpath);
+			prepare_copy(src_path, dst_path);
 			
 	}
 }
@@ -227,11 +246,10 @@ void argu_action_excute()    //
 int main( int argc, char *argv[] )
 {
 	int i,ol,opt = 0;
-	char real_inputfile_path[MAX_PATH_LENGTH];
-	char real_outputfile_path[MAX_PATH_LENGTH];
-	//char outputfile_dir[MAX_PATH_LENGTH];
-	//char outputnewfile_name[MAX_PATH_LENGTH];
-	//char* temp_argv;	
+	char* target_file,*src_file;
+	char absolute_src_path[MAX_PATH_LENGTH];
+	char absolute_target_path[MAX_PATH_LENGTH];
+	
 	struct option long_options[] = {{"archive", no_argument, NULL, 'a'},
 					{"attributes-only", no_argument, NULL,ATTRIBUTES_ONLY_OPTION },
  					{"backup", optional_argument, NULL, 'b'},
@@ -366,10 +384,13 @@ int main( int argc, char *argv[] )
 		opt = getopt_long(argc, argv,optString,long_options,NULL);
 	}
 	
-	ga.num_of_files = argc - optind;
-	sprintf(real_outputfile_path,"%s",argv[argc-1]);
-	out_file_parse(argv[argc-1],real_outputfile_path);
-	ol = strlen(ga.output_file);
+	ga.num_src_files = argc - optind - 1;
+	sprintf(absolute_target_path,"%s",argv[argc-1]);
+	if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
+	{
+		exit(EXIT_FAILURE);
+	}	
+	ol = strlen(target_file);
 	for(i = optind; i < argc-1 ; i++)
 	{
 		it = type_of_file(argv[i]);                            //判断文件可不可达
@@ -377,13 +398,13 @@ int main( int argc, char *argv[] )
 		{
 			char p[MAX_PATH_LENGTH];
 			sprintf(p,"%s",argv[i]);
-			ga.output_file[ol] = '\0';
-			make_parent_dir(ga.output_file,p,0775);
+			target_file[ol] = '\0';
+			make_parent_dir(target_file,p,0775);
 		}
-		ga.input_file = absolute_path(argv[i],real_inputfile_path);//把不规范的路径都改成绝对路径
-		if(str_cmp(ga.input_file,ga.output_file,ot) == false)
+		src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
+		if(str_cmp(src_file,target_file,ot) == false)
 		{
-	  		argu_action_excute();
+	  		prepare_target_file(src_file,target_file);
 		}else{
 			printf("it can't copy the same file twice in same directory\n");//
 		}

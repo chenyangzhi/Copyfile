@@ -52,7 +52,7 @@ static char const* const reflink_args[] =
 };
 static char const* const backup_args[] =
 {
-   "always", "t", "nil","simple",0
+   "off", "t", "nil","simple",0
 };
 static char const* const sparse_args[] =
 {
@@ -343,6 +343,7 @@ int main( int argc, char *argv[] )
 			case SPARSE_OPTION:
 				ga.need_sparse = true;
 				ga.sparse_mode = decode_sparse_arg(optarg);
+				break;
 			case REFLINK_OPTION:
 				ga.need_reflink = true;
 				break;
@@ -353,6 +354,10 @@ int main( int argc, char *argv[] )
 			case 'n':
 				ga.need_no_clobber = true; 
 				ga.need_interactive = false;
+				break;
+			case 'x':
+				ga.need_one_filesystem = true;
+				break;
 			default:
 				break;
 
@@ -368,7 +373,7 @@ int main( int argc, char *argv[] )
 	for(i = optind; i < argc-1 ; i++)
 	{
 		it = type_of_file(argv[i]);                            //判断文件可不可达
-		if(ga.need_parents = true)
+		if(ga.need_parents == true)
 		{
 			char p[MAX_PATH_LENGTH];
 			sprintf(p,"%s",argv[i]);

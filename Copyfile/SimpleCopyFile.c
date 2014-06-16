@@ -17,7 +17,7 @@ int overwrite = O_EXCL;
 static void excute_copy(int src, int dst,struct stat const *src_info)
 {
 	int n_read;
-	char buf[BUFFSIZE];
+	char buf[BUFFSIZE+1];
   	char *cp = 0;
   	int *ip ;
   	int n_read_total = 0;
@@ -33,12 +33,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
     	}
 	while(1)
 	{	
-		n_read = read (src, buf, buf_size);
-      		if (n_read < 0)
-		{
-	 		error_message("read file error");
-	 	}
-	
+		n_read = read_file (src, buf, buf_size);	
       		if (n_read == 0)
 			break;
 
@@ -69,10 +64,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
       		if (ip == 0)
 		{
 	  		int n = n_read;
-	  		if (write (dst, buf, n) != n)
-	    		{
-	    			error_message("write error");
-			}
+			write_file(dst, buf, n);
 	  		hole_last_write = 0;
 		}
     	}
@@ -80,13 +72,13 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
   	if (hole_last_write)
     	{
       		if (write(dst, "", 1) != 1 || ftruncate (dst, n_read_total) < 0)
-      			if (lseek (dst, (off_t) -1, SEEK_CUR) < 0L || write (dst, "", 1) != 1)
-			{
-	  			error_message("last_write_made_hole");
-			}
+		{
+			printf("last write erro or ftruncate error/n");
+		}
     	}
 	close(src);
 	close(dst);
+	return;
 }
 
 int argu_parse_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
@@ -137,7 +129,7 @@ int argu_parse_copy(const char* input_file_path,const char* output_file_path)   
 		if(ENUM_SYMLINK == it)
 		{
 			input_file_path = realpath(input_file_path,lf);
-			link_file(input_file_path, output_file_path);
+			symbol_link(input_file_path, output_file_path);
 			return true;
 		}	
 			

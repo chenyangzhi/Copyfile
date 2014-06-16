@@ -10,6 +10,7 @@
 #include <utime.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <sys/statfs.h> 
 #include "CopyFile.h"
 #include "hash.h"                         //引入hash算法只是为了有--preserve=links 保持了 源内的链接性
 
@@ -22,8 +23,9 @@ void argmatch_valid (char const *const *arglist)      //告知用户正确的参
   	//当错误输入发生时，正确输入应该被告知 
  	fputs ("Valid arguments are:", stderr);
   	for (i = 0; arglist[i]; i++)
-	    	fprintf(stderr,"%s",arglist[i]);
+	    	fprintf(stderr,"%s  ",arglist[i]);
  	putc ('\n', stderr);
+	exit(0);
 }
 int argmatch (const char *arg, const char *const *arglist)//比较选项是否准确匹配
 {
@@ -47,6 +49,7 @@ int argmatch (const char *arg, const char *const *arglist)//比较选项是否�
 void argmatch_invalid (const char *context, const char *arg)     //输出参数是非法的
 {
 	fprintf(stderr,"for %s: can't resolve #%s#/t",context,arg);
+	printf("please input the right argument\n");
 	return;
 }
 int argument_match_report (const char *context, const char *arg, const char *const *arglist)
@@ -262,8 +265,21 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 		}		
 		strcat(cur_inputfile_path,dirent_next->d_name);
 		strcat(cur_outputfile_path,dirent_next->d_name);
+		
        		if((it = type_of_file(cur_inputfile_path)) == ENUM_DIR)
 		{
+			if(ga.need_one_filesystem == true)
+			{
+				struct statfs buf1,buf2;
+				if( statfs(cur_inputfile_path, &buf1) != 0 && statfs(cur_inputfile_path, &buf2) )
+				{
+					error_message("statfs error");
+				}
+				if(buf1.f_type != buf2.f_type)
+				{
+					continue;
+				}
+			}
 			strcat(cur_outputfile_path,"/");
 			strcat(cur_inputfile_path,"/");
 			mkdir(cur_outputfile_path,0775);

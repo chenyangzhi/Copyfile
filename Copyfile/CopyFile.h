@@ -65,6 +65,7 @@ typedef struct globalArgs {
         int need_recursive;                     
         int need_symbolic_link;
 	int need_sparse;
+	int need_one_filesystem;
 	sparse_arg sparse_mode;                 
 	int num_of_files;
 	char* input_file;

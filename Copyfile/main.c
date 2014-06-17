@@ -242,9 +242,13 @@ void prepare_target_file(const char* src_file, const char* target_file)    //dst
 			
 	}
 }
-
+bool argu_valid_parse()
+{
+	
+}
 int main( int argc, char *argv[] )
 {
+	bool exit_status;
 	int i,ol,opt = 0;
 	char* target_file,*src_file;
 	char absolute_src_path[MAX_PATH_LENGTH];
@@ -318,6 +322,9 @@ int main( int argc, char *argv[] )
 				ga.need_force = true;
 				overwrite = 0;
 				break;
+			case 'l':
+				ga.need_hard_link = 1;
+	  			break;
 			case 'L':
 				ga.need_deference = true;
 				break;
@@ -356,6 +363,8 @@ int main( int argc, char *argv[] )
 				ga.need_no_preserve = true;
 				if(optarg == NULL)
 				{
+				}else{
+					 decode_preserve_arg (optarg);
 				}
 				break;
 			case SPARSE_OPTION:
@@ -366,8 +375,7 @@ int main( int argc, char *argv[] )
 				ga.need_reflink = true;
 				break;
 			case 'i':
-				ga.need_interactive = true;
-				ga.need_no_clobber = false;
+				ga.need_interactive = ASK_USER;
 				break; 
 			case 'n':
 				ga.need_no_clobber = true; 
@@ -377,6 +385,7 @@ int main( int argc, char *argv[] )
 				ga.need_one_filesystem = true;
 				break;
 			default:
+				display_usage();
 				break;
 
 		}
@@ -384,6 +393,7 @@ int main( int argc, char *argv[] )
 		opt = getopt_long(argc, argv,optString,long_options,NULL);
 	}
 	
+	argu_valid_parse();
 	ga.num_src_files = argc - optind - 1;
 	sprintf(absolute_target_path,"%s",argv[argc-1]);
 	if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
@@ -404,12 +414,11 @@ int main( int argc, char *argv[] )
 		src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
 		if(str_cmp(src_file,target_file,ot) == false)
 		{
-	  		prepare_target_file(src_file,target_file);
+	  		exit_status = prepare_target_file(src_file,target_file);
 		}else{
 			printf("it can't copy the same file twice in same directory\n");//
 		}
 	}
-        
-	
-	exit(EXIT_SUCCESS);
+        	
+	exit(exit_status);
 }

@@ -81,7 +81,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
 	return;
 }
 
-int prepare_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
+int prepare_copy(const char* input_file_path,const char* output_file_path)   //prepare the copy with argument，
 {
 	
 	int filehand_src,filehand_dst = -1;

@@ -42,6 +42,20 @@ typedef enum sparse_arg {
 	SPARSE_ALWAYS,
 	SPARSE_NEVER
 }sparse_arg;
+/* How to handle symbolic links.  */
+typedef enum Dereference_symlink
+{
+  DEREF_UNDEFINED = 1,       // Copy the symbolic link itself.  -P 
+  DEREF_NEVER,
+  DEREF_COMMAND_LINE_ARGUMENTS,
+  DEREF_ALWAYS
+  /* If the symbolic is a command line argument, then copy
+     its referent.  Otherwise, copy the symbolic link itself.  -H  */
+
+  /* Copy the referent of the symbolic link.  -L  */
+
+};
+
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
@@ -66,6 +80,9 @@ typedef struct globalArgs {
         int need_symbolic_link;
 	int need_sparse;
 	int need_one_filesystem;
+	int need_help;
+	int need_version;
+	int need_verbose;
 	sparse_arg sparse_mode;                 
 	int num_src_files;
 	char* suffix;

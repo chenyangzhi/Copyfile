@@ -242,9 +242,61 @@ void prepare_target_file(const char* src_file, const char* target_file)    //dst
 			
 	}
 }
+bool argu_valid_parse()
+{
+	  if (ga.hard_link && ga.symbolic_link)
+	    {
+	      fprintf(stderr,"%s","cannot make both hard and symbolic links");
+	      display_usage ();
+	    }
 
+	  if (backup_suffix_string)
+	    simple_backup_suffix = xstrdup (backup_suffix_string);
+
+	  x.backup_type = (make_backups
+			   ? xget_version (_("backup type"),
+					   version_control_string)
+			   : none);
+
+	  if (x.preserve_mode == 1)
+	    x.umask_kill = ~ (mode_t) 0;
+
+	  if (x.dereference == DEREF_UNDEFINED)
+	    {
+	      if (x.recursive)
+		/* This is compatible with FreeBSD.  */
+		x.dereference = DEREF_NEVER;
+	      else
+		x.dereference = DEREF_ALWAYS;
+	    }
+
+	  /* The key difference between -d (--no-dereference) and not is the version
+	     of `stat' to call.  */
+
+	  if (x.dereference == DEREF_NEVER)
+	    x.xstat = lstat;
+	  else
+	    {
+	      /* For DEREF_COMMAND_LINE_ARGUMENTS, x.xstat must be stat for
+		 each command line argument, but must later be `lstat' for
+		 any symlinks that are found via recursive traversal.  */
+	      x.xstat = stat;
+	    }
+
+	  if (x.recursive)
+	    x.copy_as_regular = copy_contents;
+
+	  /* If --force (-f) was specified and we're in link-creation mode,
+	     first remove any existing destination file.  */
+	  if (x.unlink_dest_after_failed_open && (x.hard_link || x.symbolic_link))
+	    x.unlink_dest_before_opening = 1;
+
+	  /* Allocate space for remembering copied and created files.  */
+
+}
 int main( int argc, char *argv[] )
 {
+	bool exit_status;
 	int i,ol,opt = 0;
 	char* target_file,*src_file;
 	char absolute_src_path[MAX_PATH_LENGTH];
@@ -275,6 +327,7 @@ int main( int argc, char *argv[] )
   					{"target-directory", required_argument, NULL, 't'},
  				 	{"update", no_argument, NULL, 'u'},
   					{"verbose", no_argument, NULL, 'v'},
+					{"version",no_argument,NULL,'V'}
 					{"help",no_argument,NULL,'h'},
   					{NULL, 0, NULL, 0}
 				     };
@@ -318,6 +371,9 @@ int main( int argc, char *argv[] )
 				ga.need_force = true;
 				overwrite = 0;
 				break;
+			case 'l':
+				ga.need_hard_link = 1;
+	  			break;
 			case 'L':
 				ga.need_deference = true;
 				break;
@@ -356,6 +412,8 @@ int main( int argc, char *argv[] )
 				ga.need_no_preserve = true;
 				if(optarg == NULL)
 				{
+				}else{
+					 decode_preserve_arg (optarg);
 				}
 				break;
 			case SPARSE_OPTION:
@@ -366,17 +424,28 @@ int main( int argc, char *argv[] )
 				ga.need_reflink = true;
 				break;
 			case 'i':
-				ga.need_interactive = true;
-				ga.need_no_clobber = false;
+				ga.need_interactive = ASK_USER;
 				break; 
 			case 'n':
 				ga.need_no_clobber = true; 
 				ga.need_interactive = false;
 				break;
+			case 'u':
+				ga.need_update = true;
+				break;
 			case 'x':
 				ga.need_one_filesystem = true;
 				break;
+			case 'h':
+				ga.need_help = true;
+				break;
+			case 'v':
+				ga.need_verbose = true;
+				break;
+			case 'V':
+				ga.need_version = true;
 			default:
+				display_usage();
 				break;
 
 		}
@@ -385,6 +454,7 @@ int main( int argc, char *argv[] )
 	}
 	
 	ga.num_src_files = argc - optind - 1;
+	argu_valid_parse();
 	sprintf(absolute_target_path,"%s",argv[argc-1]);
 	if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
 	{
@@ -404,12 +474,11 @@ int main( int argc, char *argv[] )
 		src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
 		if(str_cmp(src_file,target_file,ot) == false)
 		{
-	  		prepare_target_file(src_file,target_file);
+	  		exit_status = prepare_target_file(src_file,target_file);
 		}else{
 			printf("it can't copy the same file twice in same directory\n");//
 		}
 	}
-        
-	
-	exit(EXIT_SUCCESS);
+        	
+	exit(exit_status);
 }

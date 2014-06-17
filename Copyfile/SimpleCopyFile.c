@@ -81,7 +81,7 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
 	return;
 }
 
-int prepare_copy(const char* input_file_path,const char* output_file_path)   //执行相关拷贝动作，
+int prepare_copy(const char* input_file_path,const char* output_file_path)   //prepare the copy with argument，
 {
 	
 	int filehand_src,filehand_dst = -1;
@@ -159,7 +159,13 @@ int prepare_copy(const char* input_file_path,const char* output_file_path)   //�
 	{
 		excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
 	}
-        
+        if (x->verbose && !S_ISDIR (src_type))
+   	{
+      		printf ("%s -> %s", input_file_path, output_file_path);
+      		if (backup_succeeded)
+		printf(" (backup: %s)", dst_backup);
+      		putchar ('\n');
+     	}
         return true;
 }
 

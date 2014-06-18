@@ -21,6 +21,7 @@ typedef enum file_type{
   ENUM_DIR = 0, 
   ENUM_FILE,
   ENUM_SYMLINK,
+  ENUM_HARDLINK,
   ENUM_BLOCKDEVICE,
   ENUM_CHARDEVICE,
   ENUM_FP,
@@ -31,7 +32,8 @@ typedef enum backup_arg {
 	BACKUP_T,
 	BACKUP_NIL,
 	BACKUP_NEVER,
-	NO_ARG
+	NO_ARG,
+	BACKUP_SUFFIX
 }backup_arg;
 typedef enum reflink_arg{
 	ALWAYS,

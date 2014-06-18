@@ -214,32 +214,6 @@ int prepare_target_file(const char* src_file, const char* target_file)    //dst_
 	struct stat info;
 	sprintf(dst_path,"%s",target_file);
 	sprintf(src_path,"%s",src_file);
-	switch(ot)
-	{
-	
-		case ENUM_DIR:			
-			if(it == ENUM_DIR)
-			{
-				if(is_parent_dir(src_path,dst_path))
-					printf("can't copy the parent directory");
-				strcat(dst_path,basename(src_path));
-				if(true == ga.need_recursive)		
-				{	
-					strcat(dst_path,"/");
-					strcat(src_path,"/");
-					mkdir(dst_path,0775);
-					recursive_method(src_path,dst_path); //both src_path and dst_path are a directory,end with '/'
-				}else
-					printf("omitting the directory\n");
-			}else{
-				strcat(dst_path,basename(src_path));
-				prepare_copy(src_path, dst_path);
-			}
-			break;
-		default:
-			prepare_copy(src_path, dst_path);
-			
-	}
 }
 bool argu_parse(const globalArgs* ga)
 {
@@ -354,6 +328,8 @@ int main( int argc, char *argv[] )
 				break;
 			case 'S':
 				ga.need_suffix = true;
+				ga.need_backup = true;
+				ga.backuo_type = NO_ARG; /*the backup suffix will be set with suffix argument*/
 				if(optarg != NULL)
 				{
 					ga.suffix = strdup(optarg);

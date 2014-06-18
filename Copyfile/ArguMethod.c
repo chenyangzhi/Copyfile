@@ -75,7 +75,11 @@ file type_of_file(const char* input_file_path)             //判断文件的类�
           	case S_IFDIR:              	return ENUM_DIR;
            	case S_IFIFO:           	return ENUM_FP;
            	case S_IFLNK:                	return ENUM_SYMLINK;
-           	case S_IFREG:            	return ENUM_FILE;
+           	case S_IFREG:
+			if(info.st_nlink == 1)            	
+						return ENUM_FILE;
+			else
+						return ENUM_HARDLINK;	
            	case S_IFSOCK:                  return ENUM_SOCKET;
            	default:                      	return UNKNOWN;
         }
@@ -100,9 +104,7 @@ bool backup_method(const char* output_file_path)
 		}
 	}
 	strcpy(new_name,output_file_path);
-	if(0 == access(output_file_path,F_OK))
-	{
-		switch(ga.backup_type){
+	switch(ga.backup_type){
 			case BACKUP_OFF:
 				return false;
 			case BACKUP_NIL:
@@ -131,9 +133,8 @@ bool backup_method(const char* output_file_path)
 				}
 			case BACKUP_NEVER:
 			case NO_ARG:
-				
-				if(0 == access(new_name,F_OK))
-				{	
+				if(ga.need_suffix == true)
+				{
 					sprintf(new_name,"%s~",output_file_path);
 					if(0 != access(new_name,F_OK))
 					{
@@ -147,32 +148,37 @@ bool backup_method(const char* output_file_path)
 						return true;
 					}
 					return false;
+				}else{
 					
+					char temp[MAX_PATH_LENGTH];
+					sprintf(temp,"%s",new_name);
+					strcat(temp,ga.suffix);
+					if(0 != access(new_name,F_OK))
+					{
+						rename(output_file_path,temp);
+						return true;
+					}else{
+						printf("warning:the file with suffix is exiting and will omit it\n");
+						return false;
+					}
 				}
-		}
 	}	
 }
 
 int interactivity_method(const char* output_file_path)    //交互方法
 {
-	if(0 == access(output_file_path,F_OK))
-	{
-			char c;
-			printf("mycp: overwrite '%s'? y/n",output_file_path);
-			do {
-    				c = getchar();
-			   } while (isspace(c));
-			if( c == 'y' )
-			{	
-				overwrite = OVERWRITE_DST ;
-				return OVERWRITE;
-			}else{
-				overwrite = O_EXCL;
-				return NOT_OVERWRITE;
-			}
+	char c;
+	printf("mycp: overwrite '%s'? y/n",output_file_path);
+	do {
+    		c = getchar();
+	   } while (isspace(c));
+	if( c == 'y' )
+	{	
+		overwrite = OVERWRITE_DST ;
+		return OVERWRITE;
 	}else{
 		overwrite = O_EXCL;
-		return FILE_NOT_EXIST;
+		return NOT_OVERWRITE;
 	}
 }
 
@@ -239,7 +245,9 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 	char cur_inputfile_path[MAX_PATH_LENGTH];
 	char cur_outputfile_path[MAX_PATH_LENGTH];       
 	memset(cur_inputfile_path,0,sizeof(cur_inputfile_path));
-	memset(cur_outputfile_path,0,sizeof(cur_outputfile_path));	
+	memset(cur_outputfile_path,0,sizeof(cur_outputfile_path));
+	strcat(cur_inputfile_path,"/");
+	strcat(cur_outputfile_path,"/");	
 	to_readDir = opendir(input_directory);
 	if (!to_readDir)
 	{
@@ -271,13 +279,9 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 					continue;
 				}
 			}
-			strcat(cur_outputfile_path,"/");
-			strcat(cur_inputfile_path,"/");
-			mkdir(cur_outputfile_path,0775);
-			recursive_method(cur_inputfile_path,cur_outputfile_path);	
-		}else{
-			prepare_copy(cur_inputfile_path,cur_outputfile_path);		
+			mkdir(cur_outputfile_path,0775);	
 		}
+		prepare_copy(cur_inputfile_path,cur_outputfile_path);		
 	}
         closedir(to_readDir);
 	return;

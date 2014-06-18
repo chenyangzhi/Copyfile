@@ -211,29 +211,49 @@ int prepare_target_file(const char* src_file, const char* target_file)    //dst_
 {
 	char dst_path[MAX_PATH_LENGTH];
 	char src_path[MAX_PATH_LENGTH];
+	int flag;
 	struct stat info;
 	sprintf(dst_path,"%s",target_file);
 	sprintf(src_path,"%s",src_file);
+	switch(ot)
+	{
+	
+		case ENUM_DIR:			
+			if(it == ENUM_DIR)
+			{
+				strcat(dst_path,basename(src_path));
+				if(is_parent_dir(src_path,dst_path))
+				{
+					printf("can't copy the parent directory");
+					flag = false;
+				}
+				
+				if(1 == ga.need_recursive)		
+				{	
+					mkdir(dst_path,0775);
+				}else{
+					flag = false;
+					printf("omitting the directory\n");
+				}
+			}
+
+			flag = prepare_copy(src_path, dst_path);
+			break;
+		default:
+			flag = prepare_copy(src_path, dst_path);
+			break;
+			
+	}
+	return flag;
 }
-bool argu_parse(const globalArgs* ga)
+bool argu_parse(const globalArgs* g)
 {
 	int flag;
-	if (ga.hard_link && ga.symbolic_link)
+	if (g->need_hard_link && g->need_symbolic_link)
 	{
 		fprintf(stderr,"%s","cannot make both hard and symbolic links");
 		display_usage ();
 		flag = false;
-	}
-
-	if (ga.recursive)
-	{
-		ga.copy_as_regular = ga.copy_contents;
-		flag = true;
-	}
-	if (ga.unlink_dest_after_failed_open && (ga.hard_link || ga.symbolic_link))
-	{
-		x.unlink_dest_before_opening = 1;
-		flag = true;
 	}
 	return flag;	
 }
@@ -269,7 +289,7 @@ int main( int argc, char *argv[] )
   					{"target-directory", required_argument, NULL, 't'},
  				 	{"update", no_argument, NULL, 'u'},
   					{"verbose", no_argument, NULL, 'v'},
-					{"version",no_argument,NULL,'V'}
+					{"version",no_argument,NULL,'V'},
 					{"help",no_argument,NULL,'h'},
   					{NULL, 0, NULL, 0}
 				     };
@@ -329,7 +349,7 @@ int main( int argc, char *argv[] )
 			case 'S':
 				ga.need_suffix = true;
 				ga.need_backup = true;
-				ga.backuo_type = NO_ARG; /*the backup suffix will be set with suffix argument*/
+				ga.backup_type = NO_ARG; /*the backup suffix will be set with suffix argument*/
 				if(optarg != NULL)
 				{
 					ga.suffix = strdup(optarg);
@@ -389,10 +409,10 @@ int main( int argc, char *argv[] )
 				break;
 			case 'V':
 				ga.need_version = true;
+				break;
 			case UNLINK_DEST_BEFORE_OPENING:
 				ga.need_unlink = true;
 				break;
-			case 
 			default:
 				display_usage();
 				break;
@@ -403,7 +423,7 @@ int main( int argc, char *argv[] )
 	}
 
 	ga.num_src_files = argc - optind - 1;       //number of source files
-	if(argu_valid_parse(&ga) == true)
+	if(argu_parse(&ga) == true)
 	{
 		sprintf(absolute_target_path,"%s",argv[argc-1]);
 		if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
@@ -427,7 +447,7 @@ int main( int argc, char *argv[] )
 		  		exit_status = prepare_target_file(src_file,target_file);
 			}else{
 				printf("it can't copy the same file twice in same directory\n");//
-				exit_status = EIXT_FAILURE
+				exit_status = EXIT_FAILURE;
 			}
 		}
 	}

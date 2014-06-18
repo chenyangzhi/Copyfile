@@ -66,7 +66,7 @@ bool is_parent_dir(const char* input_path,const char* output_path)
 		return true;
 	return false;
 }
-bool str_cmp(const char* str1,const char* str2,const file flag)
+bool str_cmp(const char* str1,const char* str2,const file_type flag)
 {
 	int l;
 	if(flag == ENUM_DIR)

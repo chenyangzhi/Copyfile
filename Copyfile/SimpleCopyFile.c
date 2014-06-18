@@ -8,10 +8,12 @@
 #include <stdio.h>
 #include <utime.h>
 #include <string.h>
-
+#include <sys/statfs.h> 
+#include "hash.h" 
+   
 #define BUFFSIZE  131072
 extern globalArgs ga;
-extern file it;
+extern file_type it;
 int overwrite = O_EXCL;
 
 static void excute_copy(int src, int dst,struct stat const *src_info)
@@ -81,27 +83,32 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
 	return;
 }
 
-int prepare_copy(const char* input_file_path,const char* output_file_path)   //prepare the copy with argument，
+int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy with the set argument，
 {
-	
+	bool backup_succeed;
 	int filehand_src,filehand_dst = -1;
-	char* input;	
-	char lf[MAX_PATH_LENGTH];
+	char* src_point_file;	
+	char lf[MAX_PATH_LENGTH],dst_backup[MAX_PATH_LENGTH];
 	struct stat info;
+	struct utimbuf preserve_timestamp;  
 	
-	file_status(input_file_path, &info);            //提取文件的状态信息
-	if(0 == access(output_file,F_OK)
+	file_status(src_path, &info);            //提取文件的状态信息
+	preserve_timestamp.actime = info.st_atime;
+	preserve_timestamp.modtime = info.st_mtime;
+	
+	filehand_src = open_file(dst_path,O_RDONLY);
+	if(0 == access(dst_path,F_OK))
 	{ 
 		/*backup with special suffix by user set or common suffix ~*/
 		if(ga.need_backup == true)
 		{
-			if(backup_method(output_file_path) == false)
+			if(backup_succeed = backup_method(dst_path) == false)
 				return true;	
 		}
 		/*mycp with argument interactive will interactive with the user*/					
 		if(ga.need_interactive == true)        
 		{									//判断交互标志
-			if(interactivity_method(output_file_path) == NOT_OVERWRITE)     //
+			if(interactivity_method(dst_path) == NOT_OVERWRITE)     //
 			{
 				return  true;
 			}
@@ -110,125 +117,135 @@ int prepare_copy(const char* input_file_path,const char* output_file_path)   //p
 			return true;
 		/*the interactive argument are higher priority than force argment*/
 		}else if(ga.need_force == true){
-			if( filehand_dst = open(output_file_path,O_WRONLY|O_CREAT|O_EXCL) )
+			if( filehand_dst = open(dst_path,O_WRONLY|O_CREAT|O_EXCL) )
 			{
-				remove(output_file_path);
-			
+				remove(dst_path);
 			}		
-		}else if(ga.remove_destination == true){
-				remove(output_file_path);
-		}else if{
+		}else if(ga.need_remove_destination == true){
+				remove(dst_path);
+		}	
+		/*then,to see if need to update*/
+		else if(ga.need_update == true){
+			
+		}else{
 			/*cp overwrite the exist file,but i don't think so*/
-			printf("the file %s is exist,and omitting it\n",output_file_path);
+			printf("the file %s is exist,and omitting it\n",dst_path);
 			return false;
+		}
 	}
-	if(ot == ENUM )
+	
+	/*different copy method depend argument and file type*/
+	if(ga.need_symbolic_link == true)
 	{
+		symbol_link(src_path, dst_path);
+	}else if(ga.need_hard_link == true && it != ENUM_DIR){
+		struct statfs buf1,buf2;
+		if( statfs(src_path, &buf1) != 0 && statfs(dst_path, &buf2) )
+		{
+			printf("can't make hard link between with different file system\n");
+		}else{
+			link(src_path, dst_path);
+		}
+	}else{
 		switch(it)
 		{
-	
-			case ENUM_DIR:			
+			char *src_point_file;
+			case ENUM_DIR:
 				if(is_parent_dir(src_path,dst_path))
 					printf("can't copy the parent directory");
-				strcat(dst_path,basename(src_path));
 				if(true == ga.need_recursive)		
 				{	
-					mkdir(dst_path,0775);
 					/*both src_path and dst_path are a directory*/
-					recursive_method(src_path,dst_path); 
-				}else
+					recursive_method(src_path,dst_path);
+					break; 
+				}else{
 					printf("omitting the directory\n");
+					return false;
+				}
+			case ENUM_HARDLINK:
+				if(ga.preserve_links == true)
+				{
+					if(preserve_links_method(info, src_path,dst_path) != SUCCESS_LINK)
+					{	
+						if(filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775) != -1)
+						{
+							excute_copy(filehand_src, filehand_dst,&info);
+						}
+					}
+					
+				}else{
+					excute_copy(filehand_src, filehand_dst,&info);
 				}
 				break;
 			case ENUM_SYMLINK:
-				break;
-			case ENUM_HARDLINK:
-			
+				src_point_file = realpath(src_path,lf);
+				if(src_point_file != NULL)
+				{
+					if( ga.need_no_deference == true)                                        
+					{
+						symbol_link(src_path, dst_path);
+					}else{	
+						it = type_of_file(src_point_file);					
+						prepare_copy(src_point_file,dst_path);
+					}						
+				}
+				/*if this symbolic link are disconnected*/
+				else{                                     
+					readlink(src_path,lf,MAX_PATH_LENGTH);
+					symbol_link(lf,dst_path);
+					return true;		
+				}
 				break;
 			case ENUM_FP:
-				if(ga.copy_contents == true)			
-				{	if (mkfifo (dst_path, 0775) != 0)
+				if(ga.need_copy_contents == false)			
+				{	
+					if (mkfifo (dst_path, 0775) != 0)
 					{
 						printf("make fifo failed\n");	
 					}
 					break;
 				}
 			case ENUM_BLOCKDEVICE:
-			case ENUM_CHARDEVICE:
-			case ENUM_SOCKET:
-				if(ga.copy_contents == true)
-				{
-					if (mknod (dst_path, 0775, src_sb.st_rdev) != 0)
+				case ENUM_CHARDEVICE:
+				case ENUM_SOCKET:
+					if(ga.need_copy_contents == false)
 					{
-						printf("make node filed\n");
+						if (mknod (dst_path, 0775, info.st_rdev) != 0)
+						{
+							printf("make node filed\n");
+						}
+						break;
 					}
-					break;
-				}
 			case ENUM_FILE:
-				excute_copy(src_path, dst_path);
+				if( ga.need_attr_only == false)
+				{
+					filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775);
+					excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
+				}
 				break;
 			
 		}
-	}else{
-		/*only one source file,only one target file*/
-		strcat(dst_path,basename(src_path));
-		excute_copy(src_path, dst_path);
-	}
+	}	
 
-
-
-
-		
-	if( true == ga.need_symbolic_link )
+	if(ga.preserve_mode)
 	{
-		symbol_link(input_file_path, output_file_path);
-		return true;
+		chmod(dst_path, info.st_mode);
 	}
-		if(ga.need_preserve == true)
-		{
-			if((filehand_dst = preserve_method(info,input_file_path,output_file_path)) == SUCCESS_LINK)
-				return true;
-		}else if(ga.need_no_deference == true){
-			if(ENUM_SYMLINK == it)
-			{
-				input_file_path = realpath(input_file_path,lf);
-				symbol_link(input_file_path, output_file_path);
-				return true;
-			}	
-			
-		}else if(ENUM_SYMLINK == it)
-		{
-			input = realpath(input_file_path,lf);
-			if(input != NULL && ga.need_no_deference == false)                                        //此软链接已经断掉了
-			{		
-				if(type_of_file(input) == ENUM_DIR)
-				{
-					symbol_link(input,output_file_path);
-					return true;
-				}
-				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
-			}else{
-				readlink(input_file_path,lf,MAX_PATH_LENGTH);
-				symbol_link(lf,output_file_path);
-				return true;		
-			}
+	if(ga.preserve_timestamps)
+	{
+		utimes(dst_path,&preserve_timestamp);
+	}
+	if(ga.preserve_ownership)
+	{
+		chown(dst_path, info.st_uid, info.st_gid);
+	}					
 		
-		}else if(filehand_dst == -1){
-			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|overwrite, 0775);
-		}
-		filehand_src = open_file(input_file_path,O_RDONLY);
-
-		if( ga.need_attr_only == false)
-		{
-			excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
-		}
-		if (x->verbose && !S_ISDIR (src_type))
-	   	{
-	      		printf ("%s -> %s", input_file_path, output_file_path);
-	      		if (backup_succeeded)
-			printf(" (backup: %s)", dst_backup);
-	      		putchar ('\n');
-	     	}
+	if (ga.need_verbose && type_of_file(src_path) == ENUM_DIR)
+	{
+	    	printf ("%s -> %s", src_path, dst_path);
+	      	if (backup_succeed)
+		printf(" (backup: %s)", dst_backup);
+	      	putchar ('\n');
 	}
 	close(filehand_src);
 	close(filehand_dst);

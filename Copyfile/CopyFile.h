@@ -8,6 +8,7 @@
 #define true 1
 #define false 0
 #define SUCCESS_LINK -2
+#define NO_LINK -3
 #define MAX_PATH_LENGTH 512
 #define DEBUG_INFO(s,d)  printf("Debug info:"),printf(s,d)
 #define NOT_OVERWRITE 1
@@ -71,13 +72,17 @@ typedef struct globalArgs {
  	int preserve_mode;
   	int preserve_timestamps;
 	int preserve_links;
-        int need_recursive;                     
+        int need_recursive; 
+	int need_hard_link;
+	int need_unlink;                    
         int need_symbolic_link;
 	int need_sparse;
 	int need_one_filesystem;
+	int need_update;
 	int need_help;
 	int need_version;
-	int need_verbose;                
+	int need_verbose; 
+	int need_remove_destination;               
 	int num_src_files;
 	char* suffix;
 	char* parent_dir;
@@ -87,7 +92,7 @@ typedef struct globalArgs {
                 
 } globalArgs;
 
-file type_of_file(const char* inputFilePath);
+file_type type_of_file(const char* inputFilePath);
 int argu_parse_copy(const char* inputFilePath,const char* outputFilePath);
 void recursive_method(const char* input,const char* output);
 int preserve_method(struct stat info, const char* input_file_path, const char* output_file_path);

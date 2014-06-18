@@ -16,7 +16,7 @@
 
 extern globalArgs ga;
 extern int overwrite;
-extern file it;
+extern file_type it;
 void argmatch_valid (char const *const *arglist)      //告知用户正确的参数输入
 {	
 	int i;
@@ -65,7 +65,7 @@ int argument_match_report (const char *context, const char *arg, const char *con
  	return -1;
 }
 
-file type_of_file(const char* input_file_path)             //判断文件的类型，是目录还是普通文件还是其他的什么
+file_type type_of_file(const char* input_file_path)             //判断文件的类型，是目录还是普通文件还是其他的什么
 {
 	struct stat info;
 	file_status(input_file_path,&info);
@@ -182,18 +182,14 @@ int interactivity_method(const char* output_file_path)    //交互方法
 	}
 }
 
-int preserve_method(struct stat info,const char* input_file_path, const char* output_file_path )   //--preserve links
+int preserve_links_method(const struct stat info,const char* input_file_path, const char* output_file_path )   //--preserve links
 {
 	char buf[MAX_PATH_LENGTH];
 	int filehand_dst;
 	char *ep;
-	struct utimbuf preserve_timestamp;
-	preserve_timestamp.actime = info.st_atime;
-	preserve_timestamp.modtime = info.st_mtime;  
-	if(ga.preserve_links)
-	{
-		static hashmap* hmap = NULL;
-		ino_t ik;
+	
+	static hashmap* hmap = NULL;
+	ino_t ik;
 		dev_t dk;
 		if(hmap == NULL)                                       //首次创建hashtable
 			hmap = mk_hmap(int_hash_fn, int_compare_fn);
@@ -218,23 +214,9 @@ int preserve_method(struct stat info,const char* input_file_path, const char* ou
 			link_file(ep, output_file_path);
 			return SUCCESS_LINK;
 		}else{
-			hmap_add(hmap, ik, dk,output_file_path); 
-			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|O_EXCL, 0775);
+			hmap_add(hmap, ik, dk, output_file_path); 
+			return NO_LINK;
 		}
-	}
-
-	if(ga.preserve_mode)
-	{
-		chmod(output_file_path, info.st_mode);
-	}
-	if(ga.preserve_timestamps)
-	{
-		utimes(output_file_path,&preserve_timestamp);
-	}
-	if(ga.preserve_ownership)
-	{
-		chown(output_file_path, info.st_uid, info.st_gid);
-	}					
 	return filehand_dst;
 }
 

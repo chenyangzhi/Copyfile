@@ -16,7 +16,7 @@
 #define OVERWRITE_DST 00000000
 #define ST_NBLOCKSIZE 512
 
-typedef enum file{
+typedef enum file_type{
   UNKNOWN = -1,
   ENUM_DIR = 0, 
   ENUM_FILE,
@@ -25,7 +25,7 @@ typedef enum file{
   ENUM_CHARDEVICE,
   ENUM_FP,
   ENUM_SOCKET
-}file;
+}file_type;
 typedef enum backup_arg {
 	BACKUP_OFF = 0,
 	BACKUP_T,
@@ -42,6 +42,13 @@ typedef enum sparse_arg {
 	SPARSE_ALWAYS,
 	SPARSE_NEVER
 }sparse_arg;
+
+typedef enum interactive
+{
+  ALWAYS_YES = 1,
+  ALWAYS_NO,
+  ASK_USER
+}interactive;
 typedef struct globalArgs {
         int need_archive;                       /*-a option*/
 	int need_attr_only;
@@ -66,11 +73,15 @@ typedef struct globalArgs {
         int need_symbolic_link;
 	int need_sparse;
 	int need_one_filesystem;
-	sparse_arg sparse_mode;                 
+	int need_help;
+	int need_version;
+	int need_verbose;                
 	int num_src_files;
 	char* suffix;
 	char* parent_dir;
-	backup_arg backup_type;                  /*-b option*/                
+	backup_arg backup_type;                  /*-b option*/     
+	sparse_arg sparse_mode; 
+	interactive interactive_mode;            /*to handle the  interactive mode*/    
                 
 } globalArgs;
 

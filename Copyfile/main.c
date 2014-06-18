@@ -23,7 +23,6 @@ enum
   PRESERVE_ATTRIBUTES_OPTION,
   REPLY_OPTION,
   SPARSE_OPTION,
-  STRIP_TRAILING_SLASHES_OPTION,
   TARGET_DIRECTORY_OPTION,
   UNLINK_DEST_BEFORE_OPENING,
   REFLINK_OPTION
@@ -37,8 +36,8 @@ enum File_attribute
    PRESERVE_ALL
 };
 globalArgs ga;
-file ot = -1;
-file it = -1;
+file_type ot = -1;
+file_type it = -1;
 extern int overwrite;
 static const char* optString = "abdfHilLprstuvxPRS:TV:";
 
@@ -208,7 +207,7 @@ char* target_file_parse(const char* pathname,char dst_name[])
 	}
 }
 
-void prepare_target_file(const char* src_file, const char* target_file)    //dst_path is the last pathname for copying  
+int prepare_target_file(const char* src_file, const char* target_file)    //dst_path is the last pathname for copying  
 {
 	char dst_path[MAX_PATH_LENGTH];
 	char src_path[MAX_PATH_LENGTH];
@@ -242,9 +241,27 @@ void prepare_target_file(const char* src_file, const char* target_file)    //dst
 			
 	}
 }
-bool argu_valid_parse()
+bool argu_parse(const globalArgs* ga)
 {
-	
+	int flag;
+	if (ga.hard_link && ga.symbolic_link)
+	{
+		fprintf(stderr,"%s","cannot make both hard and symbolic links");
+		display_usage ();
+		flag = false;
+	}
+
+	if (ga.recursive)
+	{
+		ga.copy_as_regular = ga.copy_contents;
+		flag = true;
+	}
+	if (ga.unlink_dest_after_failed_open && (ga.hard_link || ga.symbolic_link))
+	{
+		x.unlink_dest_before_opening = 1;
+		flag = true;
+	}
+	return flag;	
 }
 int main( int argc, char *argv[] )
 {
@@ -273,12 +290,12 @@ int main( int argc, char *argv[] )
   					{"reply", required_argument, NULL, REPLY_OPTION},
   					{"sparse", required_argument, NULL, SPARSE_OPTION},
 					{"reflink", optional_argument, NULL, REFLINK_OPTION},
-  					{"strip-trailing-slashes", no_argument, NULL, STRIP_TRAILING_SLASHES_OPTION},
   					{"suffix", required_argument, NULL, 'S'},
   					{"symbolic-link", no_argument, NULL, 's'},
   					{"target-directory", required_argument, NULL, 't'},
  				 	{"update", no_argument, NULL, 'u'},
   					{"verbose", no_argument, NULL, 'v'},
+					{"version",no_argument,NULL,'V'}
 					{"help",no_argument,NULL,'h'},
   					{NULL, 0, NULL, 0}
 				     };
@@ -360,11 +377,12 @@ int main( int argc, char *argv[] )
 				ga.need_parents = true;
 				break;
 			case NO_PRESERVE_ATTRIBUTES_OPTION:
-				ga.need_no_preserve = true;
 				if(optarg == NULL)
 				{
+					printf("warning no attribute specified with no preserve option\n");
 				}else{
-					 decode_preserve_arg (optarg);
+					ga.need_no_preserve = true;
+					decode_preserve_arg (optarg);
 				}
 				break;
 			case SPARSE_OPTION:
@@ -381,9 +399,24 @@ int main( int argc, char *argv[] )
 				ga.need_no_clobber = true; 
 				ga.need_interactive = false;
 				break;
+			case 'u':
+				ga.need_update = true;
+				break;
 			case 'x':
 				ga.need_one_filesystem = true;
 				break;
+			case 'h':
+				ga.need_help = true;
+				break;
+			case 'v':
+				ga.need_verbose = true;
+				break;
+			case 'V':
+				ga.need_version = true;
+			case UNLINK_DEST_BEFORE_OPENING:
+				ga.need_unlink = true;
+				break;
+			case 
 			default:
 				display_usage();
 				break;
@@ -392,31 +425,34 @@ int main( int argc, char *argv[] )
 		
 		opt = getopt_long(argc, argv,optString,long_options,NULL);
 	}
-	
-	argu_valid_parse();
-	ga.num_src_files = argc - optind - 1;
-	sprintf(absolute_target_path,"%s",argv[argc-1]);
-	if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
+
+	ga.num_src_files = argc - optind - 1;       //number of source files
+	if(argu_valid_parse(&ga) == true)
 	{
-		exit(EXIT_FAILURE);
-	}	
-	ol = strlen(target_file);
-	for(i = optind; i < argc-1 ; i++)
-	{
-		it = type_of_file(argv[i]);                            //判断文件可不可达
-		if(ga.need_parents == true)
+		sprintf(absolute_target_path,"%s",argv[argc-1]);
+		if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
 		{
-			char p[MAX_PATH_LENGTH];
-			sprintf(p,"%s",argv[i]);
-			target_file[ol] = '\0';
-			make_parent_dir(target_file,p,0775);
-		}
-		src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
-		if(str_cmp(src_file,target_file,ot) == false)
+			exit(EXIT_FAILURE);
+		}	
+		ol = strlen(target_file);
+		for(i = optind; i < argc-1 ; i++)
 		{
-	  		exit_status = prepare_target_file(src_file,target_file);
-		}else{
-			printf("it can't copy the same file twice in same directory\n");//
+			it = type_of_file(argv[i]);                            //判断文件可不可达
+			if(ga.need_parents == true)
+			{
+				char p[MAX_PATH_LENGTH];
+				sprintf(p,"%s",argv[i]);
+				target_file[ol] = '\0';
+				make_parent_dir(target_file,p,0775);
+			}
+			src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
+			if(str_cmp(src_file,target_file,ot) == false)
+			{
+		  		exit_status = prepare_target_file(src_file,target_file);
+			}else{
+				printf("it can't copy the same file twice in same directory\n");//
+				exit_status = EIXT_FAILURE
+			}
 		}
 	}
         	

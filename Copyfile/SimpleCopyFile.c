@@ -159,7 +159,13 @@ int prepare_copy(const char* input_file_path,const char* output_file_path)   //p
 	{
 		excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
 	}
-        
+        if (x->verbose && !S_ISDIR (src_type))
+   	{
+      		printf ("%s -> %s", input_file_path, output_file_path);
+      		if (backup_succeeded)
+		printf(" (backup: %s)", dst_backup);
+      		putchar ('\n');
+     	}
         return true;
 }
 

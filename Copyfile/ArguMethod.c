@@ -176,68 +176,59 @@ int interactivity_method(const char* output_file_path)    //交互方法
 	}
 }
 
-int preserve_method(struct stat info,const char* input_file_path, const char* output_file_path )   //--preserve方法
+int preserve_method(struct stat info,const char* input_file_path, const char* output_file_path )   //--preserve links
 {
-	//int bufsiz = MAX_PATH_LENGTH;
 	char buf[MAX_PATH_LENGTH];
 	int filehand_dst;
 	char *ep;
 	struct utimbuf preserve_timestamp;
 	preserve_timestamp.actime = info.st_atime;
 	preserve_timestamp.modtime = info.st_mtime;  
-	if(ga.need_preserve == true)
+	if(ga.preserve_links)
 	{
-		if(ga.preserve_links)
+		static hashmap* hmap = NULL;
+		ino_t ik;
+		dev_t dk;
+		if(hmap == NULL)                                       //首次创建hashtable
+			hmap = mk_hmap(int_hash_fn, int_compare_fn);
+		if(S_ISLNK(info.st_mode))
 		{
-			static hashmap* hmap = NULL;
-			ino_t ik;
-			dev_t dk;
-			if(hmap == NULL)                                       //首次创建hashtable
-				hmap = mk_hmap(int_hash_fn, int_compare_fn);
-			if(S_ISLNK(info.st_mode))
-			{
-				struct stat sb;
-				//int size = readlink(input_file_path, buf,bufsiz);
-				//buf[size] = 0;
-				input_file_path = realpath(input_file_path,buf);
-				file_status(buf,  &sb);
-				ik = sb.st_ino;
-				dk = sb.st_dev;
+			struct stat sb;
+			//int size = readlink(input_file_path, buf,bufsiz);
+			//buf[size] = 0;
+			input_file_path = realpath(input_file_path,buf);
+			file_status(buf,  &sb);
+			ik = sb.st_ino;
+			dk = sb.st_dev;
 				
-			}else{
-				ik = info.st_ino;
-			        dk = info.st_dev;
-				//sprintf(buf,"%s",input_file_path);
-			}	
-			
-			
-			if( (ep = hmap_find(hmap, ik,dk)) != NULL)
-			{
+		}else{
+			ik = info.st_ino;
+			dk = info.st_dev;
+			//sprintf(buf,"%s",input_file_path);
+		}	
+		if( (ep = hmap_find(hmap, ik,dk)) != NULL)
+		{
 				
-				link_file(ep, output_file_path);
-				return SUCCESS_LINK;
-			}else{
-				hmap_add(hmap, ik, dk,output_file_path); 
-				filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|O_EXCL, 0775);
-			     }
-		}else{	
+			link_file(ep, output_file_path);
+			return SUCCESS_LINK;
+		}else{
+			hmap_add(hmap, ik, dk,output_file_path); 
 			filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT|O_EXCL, 0775);
 		}
-		if(ga.preserve_mode)
-		{
-			 chmod(output_file_path, info.st_mode);
-		}
-		if(ga.preserve_timestamps)
-		{
-			 utimes(output_file_path,&preserve_timestamp);
-		}
-		if(ga.preserve_ownership)
-		{
-			 chown(output_file_path, info.st_uid, info.st_gid);
-		}			
-	}else{
-		filehand_dst = open_file(output_file_path,O_WRONLY|O_CREAT||O_EXCL, 0775);
 	}
+
+	if(ga.preserve_mode)
+	{
+		chmod(output_file_path, info.st_mode);
+	}
+	if(ga.preserve_timestamps)
+	{
+		utimes(output_file_path,&preserve_timestamp);
+	}
+	if(ga.preserve_ownership)
+	{
+		chown(output_file_path, info.st_uid, info.st_gid);
+	}					
 	return filehand_dst;
 }
 

@@ -214,7 +214,7 @@ int preserve_links_method(const struct stat info,const char* input_file_path, co
 			link_file(ep, output_file_path);
 			return SUCCESS_LINK;
 		}else{
-			hmap_add(hmap, ik, dk, output_file_path); 
+			hmap_add(hmap, ik, dk, input_file_path); 
 			return NO_LINK;
 		}
 	return filehand_dst;
@@ -249,18 +249,6 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 		
        		if((it = type_of_file(cur_inputfile_path)) == ENUM_DIR)
 		{
-			if(ga.need_one_filesystem == true)
-			{
-				struct statfs buf1,buf2;
-				if( statfs(cur_inputfile_path, &buf1) != 0 && statfs(cur_inputfile_path, &buf2) )
-				{
-					error_message("statfs error");
-				}
-				if(buf1.f_type != buf2.f_type)
-				{
-					continue;
-				}
-			}
 			mkdir(cur_outputfile_path,0775);	
 		}
 		prepare_copy(cur_inputfile_path,cur_outputfile_path);		

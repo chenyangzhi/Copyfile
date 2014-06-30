@@ -8,9 +8,9 @@
 #include "CopyFile.h"
 //对系统函数进行包装，以便对可能的错误进行处理
 
-void error_message(const char* error_message)  //错误消息输出函数
+void error_message(const char* str)  //错误消息输出函数
 {
-	perror(error_message);
+	perror(str);
 	exit(EXIT_FAILURE);
 }
 
@@ -131,7 +131,8 @@ bool access_file(const char* path, int mode)
 	if(0 != access(path,mode))
 	{
 		fprintf(stderr,"path is %s ",path);
-		error_message("access error");	
+		fprintf(stderr,"%s","access error");
+		return false;	
 	}
 	return true;
 }

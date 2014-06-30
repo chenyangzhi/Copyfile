@@ -133,9 +133,7 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 			return false;
 		}
 	}
-	 /* Are we crossing a file system */
-      	if (ga.one_file_system && device != 0 && device != info.st_dev)
-		return 0;
+	
 	/*different copy method depend argument and file type*/
 	if(ga.need_symbolic_link == true)
 	{

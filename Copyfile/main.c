@@ -6,12 +6,10 @@
 #include <libgen.h>
 #include <string.h>
 #include "CopyFile.h"
-
-# define no_argument		0    
+# define no_argument     	0    
 # define required_argument	1    
 # define optional_argument	2   
 # define ERROR_ARGUMENT        -1
-
 # define ARG_MATCH(Context, Arg, Arglist, Vallist)              \
   ((Vallist) [argument_match_report (Context, Arg, Arglist)])	  
 enum
@@ -33,7 +31,7 @@ enum File_attribute
    PRESERVE_TIMESTAMPS,
    PRESERVE_OWNERSHIP,
    PRESERVE_LINK,
-   PRESERVE_ALL
+   PRESERVE_ALL 
 };
 globalArgs ga;
 file_type ot = -1;
@@ -45,7 +43,7 @@ static char const* const preserve_args[] =
 {
    "mode", "timestamps", "ownership", "links", "all", 0
 };
-static char const* const reflink_args[] =
+static char const* const reflink_args[] = 
 {
    "none", "auto", 0
 };
@@ -101,7 +99,6 @@ static backup_arg decode_backup_arg(char const *optarg)
 }
 static void decode_preserve_arg (char const *optarg)
 {
-
   enum File_attribute const preserve_vals[] =
     {
       PRESERVE_MODE, PRESERVE_TIMESTAMPS,
@@ -151,12 +148,12 @@ static void decode_preserve_arg (char const *optarg)
 }
 //输出正确的用法.
 
-void display_usage( void )
+void display_usage( int exit_status )
 {
 	puts( "the useage is: cp [OPTION]... [-T] SOURCE DEST\
              cp [OPTION]... SOURCE... DIRECTORY\
        cp [OPTION]... -t DIRECTORY SOURCE..." );
-	exit( EXIT_FAILURE );
+	exit( exit_status );
 }
 bool is_directory(const char* pathname)
 {
@@ -188,7 +185,7 @@ char* target_file_parse(const char* pathname,char dst_name[])
 			}
 		}
 	}else{	
-		if( ga.num_src_files > 1)
+		if( g->num_src_files > 1)
 		{
 			printf("can't creat directory %s\n",pathname);
 			return false;
@@ -211,51 +208,33 @@ int prepare_target_file(const char* src_file, const char* target_file)    //dst_
 {
 	char dst_path[MAX_PATH_LENGTH];
 	char src_path[MAX_PATH_LENGTH];
-	int flag;
-	struct stat info;
+	file_type src_file_type,dst_file_type;
+	struct stat info_src,info_dst;
+
 	sprintf(dst_path,"%s",target_file);
 	sprintf(src_path,"%s",src_file);
-	switch(ot)
-	{
+	src_file_type = type_of_file(src_path,&info_src);
+	src_file_type = type_pf_file(dst_path,&info_dst);
 	
-		case ENUM_DIR:			
-			if(it == ENUM_DIR)
-			{
-				strcat(dst_path,basename(src_path));
-				if(is_parent_dir(src_path,dst_path))
-				{
-					printf("can't copy the parent directory");
-					flag = false;
-				}
-				
-				if(1 == ga.need_recursive)		
-				{	
-					mkdir(dst_path,0775);
-				}else{
-					flag = false;
-					printf("omitting the directory\n");
-				}
-			}
-
-			flag = prepare_copy(src_path, dst_path);
-			break;
-		default:
-			flag = prepare_copy(src_path, dst_path);
-			break;
-			
-	}
-	return flag;
+	return prepare_copy(src_path, dst_path,&info_src);
 }
 bool argu_parse(const globalArgs* g)
 {
 	int flag;
+	if (g->num_src_files <= 0)
+    	{
+     		fsprintf(stderr,"%s","missing file argument");
+      		return false;
+    	}
+
 	if (g->need_hard_link && g->need_symbolic_link)
 	{
 		fprintf(stderr,"%s","cannot make both hard and symbolic links");
-		display_usage ();
-		flag = false;
+		display_usage();
+		return false;
 	}
-	return flag;	
+	
+	return true;	
 }
 int main( int argc, char *argv[] )
 {
@@ -286,7 +265,6 @@ int main( int argc, char *argv[] )
 					{"reflink", optional_argument, NULL, REFLINK_OPTION},
   					{"suffix", required_argument, NULL, 'S'},
   					{"symbolic-link", no_argument, NULL, 's'},
-  					{"target-directory", required_argument, NULL, 't'},
  				 	{"update", no_argument, NULL, 'u'},
   					{"verbose", no_argument, NULL, 'v'},
 					{"version",no_argument,NULL,'V'},
@@ -433,7 +411,10 @@ int main( int argc, char *argv[] )
 		ol = strlen(target_file);
 		for(i = optind; i < argc-1 ; i++)
 		{
-			it = type_of_file(argv[i]);                            //判断文件可不可达
+			if(access_file(argv[i],F_OK) == false)                            //判断文件可不可达
+			{
+				continue;
+			}			
 			if(ga.need_parents == true)
 			{
 				char p[MAX_PATH_LENGTH];

@@ -83,20 +83,19 @@ static void excute_copy(int src, int dst,struct stat const *src_info)
 	return;
 }
 
-int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy with the set argument，
+int prepare_copy(const char* src_path,const char* dst_path,struct stat* src_info,struct stat* dst_info,file_type it,file_type ot)   //prepare the copy with the set argument，
 {
 	bool backup_succeed;
 	int filehand_src,filehand_dst = -1;
 	char* src_point_file;	
 	char lf[MAX_PATH_LENGTH],dst_backup[MAX_PATH_LENGTH];
-	struct stat info;
 	struct utimbuf preserve_timestamp;  
 	
-	file_status(src_path, &info);            //提取文件的状态信息
-	preserve_timestamp.actime = info.st_atime;
-	preserve_timestamp.modtime = info.st_mtime;
+	preserve_timestamp.actime = src_info->st_atime;
+	preserve_timestamp.modtime = src_info->st_mtime;
 	
 	filehand_src = open_file(dst_path,O_RDONLY);
+
 	if(0 == access(dst_path,F_OK))
 	{ 
 		/*backup with special suffix by user set or common suffix ~*/
@@ -140,7 +139,7 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 		symbol_link(src_path, dst_path);
 	}else if(ga.need_hard_link == true && it != ENUM_DIR){
 		struct statfs buf1,buf2;
-		if( statfs(src_path, &buf1) != 0 && statfs(dst_path, &buf2) )
+		if( src_info->st_dev != dst_info->st_dev)
 		{
 			printf("can't make hard link between with different file system\n");
 		}else{
@@ -165,16 +164,16 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 			case ENUM_HARDLINK:
 				if(ga.preserve_links == true)
 				{
-					if(preserve_links_method(info, src_path,dst_path) != SUCCESS_LINK)
+					if(preserve_links_method(src_info, src_path,dst_path) != SUCCESS_LINK)
 					{	
 						if(filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775) != -1)
 						{
-							excute_copy(filehand_src, filehand_dst,&info);
+							excute_copy(filehand_src, filehand_dst,src_info);
 						}
 					}
 					
 				}else{
-					excute_copy(filehand_src, filehand_dst,&info);
+					excute_copy(filehand_src, filehand_dst,src_info);
 				}
 				break;
 			case ENUM_SYMLINK:
@@ -185,8 +184,8 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 					{
 						symbol_link(src_path, dst_path);
 					}else{	
-						it = type_of_file(src_point_file);					
-						prepare_copy(src_point_file,dst_path);
+						it = type_of_file(src_point_file,src_info);					
+						prepare_copy(src_point_file,dst_path,src_info,dst_info,it,ot);
 					}						
 				}
 				/*if this symbolic link are disconnected*/
@@ -210,7 +209,7 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 				case ENUM_SOCKET:
 					if(ga.need_copy_contents == false)
 					{
-						if (mknod (dst_path, 0775, info.st_rdev) != 0)
+						if (mknod (dst_path, 0775, src_info->st_rdev) != 0)
 						{
 							printf("make node filed\n");
 						}
@@ -220,7 +219,7 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 				if( ga.need_attr_only == false)
 				{
 					filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775);
-					excute_copy(filehand_src,filehand_dst,&info);					//一切准备就绪，执行拷贝		
+					excute_copy(filehand_src,filehand_dst,src_info);					//一切准备就绪，执行拷贝		
 				}
 				break;
 			
@@ -229,7 +228,7 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 
 	if(ga.preserve_mode)
 	{
-		chmod(dst_path, info.st_mode);
+		chmod(dst_path, src_info->st_mode);
 	}
 	if(ga.preserve_timestamps)
 	{
@@ -237,10 +236,10 @@ int prepare_copy(const char* src_path,const char* dst_path)   //prepare the copy
 	}
 	if(ga.preserve_ownership)
 	{
-		chown(dst_path, info.st_uid, info.st_gid);
+		chown(dst_path, src_info->st_uid, src_info->st_gid);
 	}					
 		
-	if (ga.need_verbose && type_of_file(src_path) == ENUM_DIR)
+	if (ga.need_verbose && it == ENUM_DIR)
 	{
 	    	printf ("%s -> %s", src_path, dst_path);
 	      	if (backup_succeed)

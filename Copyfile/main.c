@@ -34,8 +34,6 @@ enum File_attribute
    PRESERVE_ALL 
 };
 globalArgs ga;
-file_type ot = -1;
-file_type it = -1;
 extern int overwrite;
 static const char* optString = "abdfHilLprstuvxPRS:TV:";
 
@@ -159,16 +157,16 @@ bool is_directory(const char* pathname)
 {
 	return pathname[strlen(pathname) - 1] == '/'? 1:0;
 }
-char* target_file_parse(const char* pathname,char dst_name[])
+char* target_file_parse(const char* pathname,char dst_name[],file_type* ot,struct stat* dst_info)
 {
 	if(0 == access(pathname,F_OK))
 	{
-		ot = type_of_file(pathname);
+		*ot = type_of_file(pathname,dst_info);
 		if(ENUM_DIR != ot)                        //判断输出文件的类型
 		{
 			if(ga.num_src_files > 1)
 			{
-				display_usage();
+				display_usage(EXIT_FAILURE);
 				printf("too many files for output file,the output must be a directory");
 				return false;
 			}
@@ -185,7 +183,7 @@ char* target_file_parse(const char* pathname,char dst_name[])
 			}
 		}
 	}else{	
-		if( g->num_src_files > 1)
+		if( ga.num_src_files > 1)
 		{
 			printf("can't creat directory %s\n",pathname);
 			return false;
@@ -204,33 +202,28 @@ char* target_file_parse(const char* pathname,char dst_name[])
 	}
 }
 
-int prepare_target_file(const char* src_file, const char* target_file)    //dst_path is the last pathname for copying  
+int prepare_target_file(const char* src_file, const char* target_file,file_type ot)    //dst_path is the last pathname for copying  
 {
-	char dst_path[MAX_PATH_LENGTH];
-	char src_path[MAX_PATH_LENGTH];
-	file_type src_file_type,dst_file_type;
-	struct stat info_src,info_dst;
-
-	sprintf(dst_path,"%s",target_file);
-	sprintf(src_path,"%s",src_file);
-	src_file_type = type_of_file(src_path,&info_src);
-	src_file_type = type_pf_file(dst_path,&info_dst);
+	file_type it;
+	struct stat src_info,dst_info;
 	
-	return prepare_copy(src_path, dst_path,&info_src);
+	it = type_of_file(src_file,&src_info);
+	stat(target_file,&dst_info);
+	return prepare_copy(src_file, target_file,&src_info,&dst_info,it,ot);
 }
-bool argu_parse(const globalArgs* g)
+bool argu_parse()
 {
 	int flag;
-	if (g->num_src_files <= 0)
+	if (ga.num_src_files <= 0)
     	{
-     		fsprintf(stderr,"%s","missing file argument");
+     		fprintf(stderr,"%s","missing file argument");
       		return false;
     	}
 
-	if (g->need_hard_link && g->need_symbolic_link)
+	if (ga.need_hard_link && ga.need_symbolic_link)
 	{
 		fprintf(stderr,"%s","cannot make both hard and symbolic links");
-		display_usage();
+		display_usage(EXIT_FAILURE);
 		return false;
 	}
 	
@@ -243,7 +236,9 @@ int main( int argc, char *argv[] )
 	char* target_file,*src_file;
 	char absolute_src_path[MAX_PATH_LENGTH];
 	char absolute_target_path[MAX_PATH_LENGTH];
-	
+	struct stat dst_info;
+	file_type ot = -1;
+	file_type it = -1;
 	struct option long_options[] = {{"archive", no_argument, NULL, 'a'},
 					{"attributes-only", no_argument, NULL,ATTRIBUTES_ONLY_OPTION },
  					{"backup", optional_argument, NULL, 'b'},
@@ -392,7 +387,7 @@ int main( int argc, char *argv[] )
 				ga.need_unlink = true;
 				break;
 			default:
-				display_usage();
+				display_usage(EXIT_FAILURE);
 				break;
 
 		}
@@ -401,10 +396,10 @@ int main( int argc, char *argv[] )
 	}
 
 	ga.num_src_files = argc - optind - 1;       //number of source files
-	if(argu_parse(&ga) == true)
+	if(argu_parse() == true)
 	{
 		sprintf(absolute_target_path,"%s",argv[argc-1]);
-		if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path)))
+		if(!(target_file = target_file_parse(argv[argc-1],absolute_target_path,&ot,&dst_info)))
 		{
 			exit(EXIT_FAILURE);
 		}	
@@ -414,18 +409,19 @@ int main( int argc, char *argv[] )
 			if(access_file(argv[i],F_OK) == false)                            //判断文件可不可达
 			{
 				continue;
-			}			
+			}
 			if(ga.need_parents == true)
 			{
 				char p[MAX_PATH_LENGTH];
 				sprintf(p,"%s",argv[i]);
 				target_file[ol] = '\0';
 				make_parent_dir(target_file,p,0775);
-			}
-			src_file = absolute_path(argv[i],absolute_src_path);//the relative src path -> absolute src path
+			}			
+			/*the relative src path -> absolute src path,if it is a symbolic file ,don't dereference it*/
+			src_file = absolute_path(argv[i],absolute_src_path);
 			if(str_cmp(src_file,target_file,ot) == false)
 			{
-		  		exit_status = prepare_target_file(src_file,target_file);
+		  		exit_status = prepare_target_file(src_file,target_file,ot);
 			}else{
 				printf("it can't copy the same file twice in same directory\n");//
 				exit_status = EXIT_FAILURE;

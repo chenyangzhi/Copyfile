@@ -65,18 +65,17 @@ int argument_match_report (const char *context, const char *arg, const char *con
  	return -1;
 }
 
-file_type type_of_file(const char* input_file_path)             //判断文件的类型，是目录还是普通文件还是其他的什么
+file_type type_of_file(const char* input_file_path,struct stat* info)             //判断文件的类型，是目录还是普通文件还是其他的什么
 {
-	struct stat info;
-	file_status(input_file_path,&info);
-	switch (info.st_mode & S_IFMT) {
+	file_status(input_file_path,info);
+	switch (info->st_mode & S_IFMT) {
           	case S_IFBLK:             	return ENUM_BLOCKDEVICE;
            	case S_IFCHR:        		return ENUM_CHARDEVICE;
           	case S_IFDIR:              	return ENUM_DIR;
            	case S_IFIFO:           	return ENUM_FP;
            	case S_IFLNK:                	return ENUM_SYMLINK;
            	case S_IFREG:
-			if(info.st_nlink == 1)            	
+			if(info->st_nlink == 1)            	
 						return ENUM_FILE;
 			else
 						return ENUM_HARDLINK;	
@@ -223,6 +222,7 @@ int preserve_links_method(const struct stat info,const char* input_file_path, co
 void recursive_method(const char* input_directory,const char* output_directory)                  //递归的拷贝文件
 {
 	struct dirent* dirent_next = NULL;
+	struct stat child_dir;
 	DIR* to_readDir = NULL;
 	char cur_inputfile_path[MAX_PATH_LENGTH];
 	char cur_outputfile_path[MAX_PATH_LENGTH];       
@@ -247,7 +247,7 @@ void recursive_method(const char* input_directory,const char* output_directory) 
 		strcat(cur_inputfile_path,dirent_next->d_name);
 		strcat(cur_outputfile_path,dirent_next->d_name);
 		
-       		if((it = type_of_file(cur_inputfile_path)) == ENUM_DIR)
+       		if(type_of_file(cur_inputfile_path,&child_dir) == ENUM_DIR)
 		{
 			if(ga.need_one_filesystem == true)
 			{

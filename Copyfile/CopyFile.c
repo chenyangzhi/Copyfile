@@ -91,21 +91,21 @@ bool str_cmp(const char* str1,const char* str2,const file_type flag)
 		return false;
 	}
 }
-char* absolute_path(const char* relapath,char real_name[])
+char* absolute_path(const char* rela_path,char abs_path[])
 {
 	char base_name[MAX_PATH_LENGTH],dir_name[MAX_PATH_LENGTH],
 		*file_base_name,*parent_name;
-	sprintf(real_name,"%s",relapath);
-	sprintf(base_name,"%s",relapath);
-	sprintf(dir_name,"%s",relapath);
+	sprintf(abs_path,"%s",rela_path);
+	sprintf(base_name,"%s",rela_path);
+	sprintf(dir_name,"%s",rela_path);
 	file_base_name = basename(base_name);
 	
 	parent_name = dirname(dir_name);
-	if(realpath(parent_name,real_name) == NULL)
+	if(realpath(parent_name,abs_path) == NULL)
 		printf("no this document:%s",dir_name);
-	if(strcmp(real_name,"/") != 0)
-		real_name = strcat(real_name,"/");
-	return strcat(real_name,file_base_name);
+	if(strcmp(abs_path,"/") != 0)
+		strcat(abs_path,"/");
+	return strcat(abs_path,file_base_name);
 	
 }
 void link_file(const char* path1,const char* path2)

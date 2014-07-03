@@ -92,7 +92,7 @@ typedef struct globalArgs {
                 
 } globalArgs;
 
-file_type type_of_file(const char* inputFilePath);
+file_type type_of_file(const char* inputFilePath,struct stat* info);
 int argu_parse_copy(const char* inputFilePath,const char* outputFilePath);
 void recursive_method(const char* input,const char* output);
 int preserve_method(struct stat info, const char* input_file_path, const char* output_file_path);

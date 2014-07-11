@@ -209,6 +209,86 @@ int prepare_target_file(const char* src_file, const char* target_file,file_type 
 	
 	it = type_of_file(src_file,&src_info);
 	stat(target_file,&dst_info);
+
+	switch(it)
+		{
+			char *src_point_file;
+			case ENUM_DIR:
+				if(is_parent_dir(src_path,dst_path))
+					printf("can't copy the parent directory");
+				if(true == ga.need_recursive)		
+				{	
+					/*both src_path and dst_path are a directory*/
+					recursive_method(src_path,dst_path);
+					break; 
+				}else{
+					printf("omitting the directory\n");
+					return false;
+				}
+			case ENUM_HARDLINK:
+				if(ga.preserve_links == true)
+				{
+					if(preserve_links_method(src_info, src_path,dst_path) != SUCCESS_LINK)
+					{	
+						if(filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775) != -1)
+						{
+							excute_copy(filehand_src, filehand_dst,src_info);
+						}
+					}
+					
+				}else{
+					excute_copy(filehand_src, filehand_dst,src_info);
+				}
+				break;
+			case ENUM_SYMLINK:
+				src_point_file = realpath(src_path,lf);
+				if(src_point_file != NULL)
+				{
+					if( ga.need_no_deference == true)                                        
+					{
+						symbol_link(src_path, dst_path);
+					}else{	
+						it = type_of_file(src_point_file,src_info);					
+						prepare_copy(src_point_file,dst_path,src_info,dst_info,it,ot);
+					}						
+				}
+				/*if this symbolic link are disconnected*/
+				else{                                     
+					readlink(src_path,lf,MAX_PATH_LENGTH);
+					symbol_link(lf,dst_path);
+					return true;		
+				}
+				break;
+			case ENUM_FP:
+				if(ga.need_copy_contents == false)			
+				{	
+					if (mkfifo (dst_path, 0775) != 0)
+					{
+						printf("make fifo failed\n");	
+					}
+					break;
+				}
+			case ENUM_BLOCKDEVICE:
+				case ENUM_CHARDEVICE:
+				case ENUM_SOCKET:
+					if(ga.need_copy_contents == false)
+					{
+						if (mknod (dst_path, 0775, src_info->st_rdev) != 0)
+						{
+							printf("make node filed\n");
+						}
+						break;
+					}
+			case ENUM_FILE:
+				if( ga.need_attr_only == false)
+				{
+					filehand_dst = open_file(dst_path,O_WRONLY|O_CREAT|O_EXCL,0775);
+					excute_copy(filehand_src,filehand_dst,src_info);					//一切准备就绪，执行拷贝		
+				}
+				break;
+			
+		}
+
 	return prepare_copy(src_file, target_file,&src_info,&dst_info,it,ot);
 }
 bool argu_parse()
